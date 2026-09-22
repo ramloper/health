@@ -1,0 +1,10 @@
+{
+  "id": "531-bbb",
+  "name": "5/3/1 BBB",
+  "days": [
+    {"id": "squat", "name": "스쿼트", "isRest": false, "exercises": [{"id": "squat", "name": "스쿼트", "sets": 1, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower"}]},
+    {"id": "bench", "name": "벤치", "isRest": false, "exercises": [{"id": "bench", "name": "벤치프레스", "sets": 1, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"}]},
+    {"id": "dead", "name": "데드", "isRest": false, "exercises": [{"id": "deadlift", "name": "데드리프트", "sets": 1, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower"}]},
+    {"id": "press", "name": "프레스", "isRest": false, "exercises": [{"id": "ohp", "name": "오버헤드 프레스", "sets": 1, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"}]}
+  ]
+}

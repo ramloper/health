@@ -1,0 +1,50 @@
+{
+  "id": "ppl-metallicadpa",
+  "name": "PPL Metallicadpa",
+  "days": [
+    {"id": "push-a", "name": "Push A", "isRest": false, "exercises": [
+      {"id": "ppl-bench", "name": "벤치프레스", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 55, "isCompound": true},
+      {"id": "ppl-ohp", "name": "오버헤드 프레스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+      {"id": "ppl-incline-db", "name": "인클라인 DB 프레스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 22},
+      {"id": "ppl-lateral", "name": "사이드 레터럴", "sets": 3, "repMin": 12, "repMax": 20, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
+      {"id": "ppl-pushdown", "name": "트라이셉스 푸시다운", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
+      {"id": "ppl-oh-ext", "name": "오버헤드 익스텐션", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15}
+    ]},
+    {"id": "pull-a", "name": "Pull A", "isRest": false, "exercises": [
+      {"id": "ppl-row", "name": "바벨로우", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 50, "isCompound": true},
+      {"id": "ppl-pulldown", "name": "랫풀다운", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+      {"id": "ppl-facepull", "name": "페이스풀", "sets": 3, "repMin": 15, "repMax": 20, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15},
+      {"id": "ppl-hammer", "name": "해머컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 12},
+      {"id": "ppl-curl", "name": "덤벨 컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 12}
+    ]},
+    {"id": "legs-a", "name": "Legs A", "isRest": false, "exercises": [
+      {"id": "ppl-squat", "name": "스쿼트", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
+      {"id": "ppl-rdl", "name": "RDL", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 70},
+      {"id": "ppl-legpress", "name": "레그프레스", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 100},
+      {"id": "ppl-legcurl", "name": "레그컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 25},
+      {"id": "ppl-calf", "name": "카프 레이즈", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 40}
+    ]},
+    {"id": "push-b", "name": "Push B", "isRest": false, "exercises": [
+      {"id": "ppl-ohp-b", "name": "오버헤드 프레스", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 42.5, "isCompound": true},
+      {"id": "ppl-bench-b", "name": "벤치프레스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 50},
+      {"id": "ppl-incline-b", "name": "인클라인 DB 프레스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 22},
+      {"id": "ppl-lateral-b", "name": "사이드 레터럴", "sets": 3, "repMin": 12, "repMax": 20, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
+      {"id": "ppl-pushdown-b", "name": "트라이셉스 푸시다운", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
+      {"id": "ppl-oh-ext-b", "name": "오버헤드 익스텐션", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15}
+    ]},
+    {"id": "pull-b", "name": "Pull B", "isRest": false, "exercises": [
+      {"id": "ppl-pulldown-b", "name": "랫풀다운", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 45, "isCompound": true},
+      {"id": "ppl-row-b", "name": "바벨로우", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 45},
+      {"id": "ppl-facepull-b", "name": "페이스풀", "sets": 3, "repMin": 15, "repMax": 20, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15},
+      {"id": "ppl-hammer-b", "name": "해머컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 12},
+      {"id": "ppl-curl-b", "name": "덤벨 컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 12}
+    ]},
+    {"id": "legs-b", "name": "Legs B", "isRest": false, "exercises": [
+      {"id": "ppl-squat-b", "name": "스쿼트", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
+      {"id": "ppl-rdl-b", "name": "RDL", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 70},
+      {"id": "ppl-legpress-b", "name": "레그프레스", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 100},
+      {"id": "ppl-legcurl-b", "name": "레그컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 25},
+      {"id": "ppl-calf-b", "name": "카프 레이즈", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 40}
+    ]}
+  ]
+}
