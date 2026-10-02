@@ -15,8 +15,8 @@
 | 콘텐츠 권한 | 제3자 콘텐츠 없음 |
 | 연령 등급 | 4+ (모든 항목 "없음") |
 | 가격 | 무료 |
-| 개인정보 처리방침 URL | (docs/privacy-policy.md 호스팅 주소) |
-| 지원 URL | (docs/support.md 호스팅 주소) |
+| 개인정보 처리방침 URL | https://ramloper.github.io/health/privacy-policy |
+| 지원 URL | https://ramloper.github.io/health/support |
 | 마케팅 URL | 비워 둠 |
 | 저작권 | 2026 Wooram Kim |
 

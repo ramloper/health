@@ -19,7 +19,7 @@ App Store는 개인정보 처리방침 URL과 지원 URL을 요구합니다. 가
    - 무료 플랜에서는 저장소 `ramloper/health`가 public이어야 Pages를 켤 수 있다.
    - `.nojekyll`은 추가하지 않는다.
    - 상품 이미지를 교체할 때는 같은 파일명으로 덮어쓰지 말고 새 파일명을 쓴다(기기 캐시가 영구 보존됨).
-3. 주소가 `https://<계정>.github.io/<저장소>/privacy-policy` 와 `/support` 로 생긴다.
+3. 주소가 `https://ramloper.github.io/health/privacy-policy` 와 `/support` 로 생긴다. (2026-10-02 활성화 완료, 둘 다 200 확인)
 4. 그 두 주소를 App Store Connect에 입력한다.
 
 Notion 공개 페이지나 어떤 정적 호스팅이든 상관없습니다. 내용은 docs 파일 그대로 붙이면 됩니다.
