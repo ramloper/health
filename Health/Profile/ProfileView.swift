@@ -52,7 +52,7 @@ struct ProfileView: View {
                         .padding(.horizontal, 20)
                     }
 
-                    Text("1RM을 바꾸면 5/3/1·nSuns의 TM은 바로 다시 계산돼요. 6일 근비대처럼 세트 무게로 진행하는 프로그램은 그대로예요.")
+                    Text("1RM을 바꾸면 5/3/1·nSuns에서 해당 운동의 TM만 다시 계산돼요. 6일 근비대처럼 세트 무게로 진행하는 프로그램은 그대로예요.")
                         .font(.system(size: 12))
                         .foregroundStyle(Gym.tabIdle)
                         .padding(.horizontal, 4)
@@ -126,8 +126,9 @@ struct ProfileView: View {
     private func setLift(_ mutate: @escaping (AthleteProfile, Double) -> Void) -> (Double) -> Void {
         // Returned closure runs from the number pad; sync TMs once the profile changed.
         { value in
+            let previousProfile = profile.inputs
             mutate(profile, value)
-            SessionService.syncTrainingMaxes(cycle: cycle, profile: profile.inputs)
+            SessionService.syncTrainingMaxes(cycle: cycle, profile: profile.inputs, previousProfile: previousProfile)
             try? context.save()
         }
     }

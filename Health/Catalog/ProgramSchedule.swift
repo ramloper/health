@@ -125,6 +125,7 @@ struct CycleState: Equatable {
 
 struct PrescribedSet: Equatable, Identifiable {
     var id: String { "\(exerciseId)-\(setIndex)" }
+    var groupId: String { "\(exerciseId)-\(isBBB ? "bbb" : "main")" }
     var exerciseId: String
     var exerciseName: String
     var setIndex: Int

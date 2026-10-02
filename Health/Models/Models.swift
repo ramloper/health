@@ -45,6 +45,8 @@ final class TrainingCycle {
     var stallJSON: String
     var pendingTmJSON: String
     var scheduleJSON: String = ""
+    /// Edits made during a workout take effect after its draft is finished or discarded.
+    var pendingScheduleJSON: String = ""
     /// In-progress workout (sets ticked so far). Empty when no session is running.
     var draftJSON: String = ""
     var draftDayId: String = ""
@@ -93,6 +95,15 @@ final class TrainingCycle {
 
     func saveSchedule(_ schedule: ProgramSchedule) {
         scheduleJSON = Self.encodeSchedule(schedule) ?? scheduleJSON
+    }
+
+    var pendingSchedule: ProgramSchedule? {
+        get {
+            try? JSONDecoder().decode(ProgramSchedule.self, from: Data(pendingScheduleJSON.utf8))
+        }
+        set {
+            pendingScheduleJSON = newValue.flatMap { Self.encodeSchedule($0) } ?? ""
+        }
     }
 
     func apply(_ advance: EngineAdvance) {

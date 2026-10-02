@@ -49,7 +49,11 @@ enum SessionService {
         let completed = CompletedSession(dayId: cycle.nextDayId, sets: logged)
         let advance = engine.advance(schedule: schedule, profile: profile, state: cycle.state, session: completed)
         cycle.apply(advance)
-        cycle.clearDraft()
+        let pendingSchedule = cycle.pendingSchedule
+        clearDraft(cycle: cycle)
+        if let pendingSchedule {
+            cycle.nextDayId = DayCursor.nextDayId(after: session.dayId, schedule: pendingSchedule)
+        }
         return session
     }
 
@@ -69,8 +73,7 @@ enum SessionService {
         }
         if !restart, let current = existing.first(where: { $0.programId == schedule.id }) {
             existing.filter { $0 !== current }.forEach { $0.isActive = false }
-            applyScheduleToCycle(current, schedule)
-            if let validStart { current.nextDayId = validStart }
+            if let startingDayId { selectDay(cycle: current, dayId: startingDayId) }
             return current
         }
         existing.forEach { $0.isActive = false }
@@ -81,18 +84,25 @@ enum SessionService {
         return cycle
     }
 
-    /// Profile 1RM changed: programs driven by a training max pick the new TMs up immediately.
-    static func syncTrainingMaxes(cycle: TrainingCycle?, profile: ProfileInputs) {
+    /// Recalculate only edited lifts, preserving progression for every other lift.
+    static func syncTrainingMaxes(cycle: TrainingCycle?, profile: ProfileInputs, previousProfile: ProfileInputs) {
         guard let cycle, EngineRegistry.usesTrainingMax(cycle.programId) else { return }
-        cycle.setTrainingMaxes(ProgramCatalog.trainingMaxes(for: profile))
+        var tm = cycle.state.tm
+        for (lift, value) in ProgramCatalog.trainingMaxes(for: profile)
+        where profile.oneRM(forLift: lift) != previousProfile.oneRM(forLift: lift) {
+            tm[lift] = value
+        }
+        cycle.setTrainingMaxes(tm)
     }
 
     static func selectDay(cycle: TrainingCycle, dayId: String) {
+        guard !cycle.hasDraft,
+              cycle.resolvedSchedule()?.days.contains(where: { $0.id == dayId && !$0.isRest }) == true else { return }
         cycle.nextDayId = dayId
     }
 
     static func replaceDayExercises(cycle: TrainingCycle, dayId: String, exercises: [ScheduleExercise]) {
-        guard var schedule = cycle.resolvedSchedule(),
+        guard var schedule = cycle.pendingSchedule ?? cycle.resolvedSchedule(),
               let index = schedule.days.firstIndex(where: { $0.id == dayId }) else { return }
         schedule.days[index].exercises = exercises
         applyScheduleToCycle(cycle, schedule)
@@ -119,6 +129,10 @@ enum SessionService {
     }
 
     static func applyScheduleToCycle(_ cycle: TrainingCycle, _ schedule: ProgramSchedule) {
+        if cycle.hasDraft {
+            cycle.pendingSchedule = schedule
+            return
+        }
         cycle.saveSchedule(schedule)
         if !schedule.days.contains(where: { $0.id == cycle.nextDayId && !$0.isRest }) {
             cycle.nextDayId = DayCursor.firstTrainingDayId(in: schedule)
@@ -130,9 +144,17 @@ enum SessionService {
         }
     }
 
+    static func clearDraft(cycle: TrainingCycle) {
+        cycle.clearDraft()
+        if let schedule = cycle.pendingSchedule {
+            cycle.pendingSchedule = nil
+            applyScheduleToCycle(cycle, schedule)
+        }
+    }
+
     static func syncCustomTemplate(context: ModelContext, cycle: TrainingCycle) {
         guard EngineRegistry.isCustom(cycle.programId),
-              let schedule = cycle.resolvedSchedule() else { return }
+              let schedule = cycle.pendingSchedule ?? cycle.resolvedSchedule() else { return }
         let pid = cycle.programId
         let found = try? context.fetch(FetchDescriptor<CustomRoutine>(predicate: #Predicate { $0.programId == pid }))
         found?.first?.apply(schedule)
@@ -243,6 +265,18 @@ struct TodayController {
     func completing(_ logged: [CompletedSet]) -> CycleState {
         let session = CompletedSession(dayId: state.nextDayId, sets: logged)
         return engine.advance(schedule: schedule, profile: profile, state: state, session: session).applied(to: state)
+    }
+
+    static func grouped(_ rows: [PrescribedSet]) -> [[PrescribedSet]] {
+        var result: [[PrescribedSet]] = []
+        for row in rows {
+            if let last = result.indices.last, result[last].first?.groupId == row.groupId {
+                result[last].append(row)
+            } else {
+                result.append([row])
+            }
+        }
+        return result
     }
 
     static func loggedMatchingPrescribe(_ rows: [PrescribedSet]) -> [CompletedSet] {

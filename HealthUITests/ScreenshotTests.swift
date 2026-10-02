@@ -71,6 +71,51 @@ final class ScreenshotTests: XCTestCase {
         snap("07-profile")
     }
 
+    func testFiveThreeOneCompletesMainAndBBBSets() {
+        let tabs = app.tabBars.firstMatch
+        XCTAssertTrue(tabs.waitForExistence(timeout: 10))
+        tabs.buttons["루틴"].tap()
+        let program = app.staticTexts["5/3/1 BBB"]
+        XCTAssertTrue(program.waitForExistence(timeout: 5))
+        program.press(forDuration: 1)
+        app.buttons["바로 시작"].tap()
+        let benchDay = app.buttons.containing(.staticText, identifier: "벤치").firstMatch
+        XCTAssertTrue(benchDay.waitForExistence(timeout: 5))
+        benchDay.tap()
+        tabs.buttons["오늘"].tap()
+        let start = app.buttons["start-workout"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+
+        let mainSets = app.buttons["6세트 완료"]
+        XCTAssertTrue(mainSets.waitForExistence(timeout: 5))
+        mainSets.tap()
+        let permission = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch
+        if permission.waitForExistence(timeout: 2) {
+            let allow = permission.buttons["Allow"]
+            if allow.exists { allow.tap() }
+            else if permission.buttons["허용"].exists { permission.buttons["허용"].tap() }
+        }
+        let skip = app.buttons["휴식 건너뛰기"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 5))
+        skip.tap()
+        app.buttons["다음 운동 ›"].tap()
+
+        let bbbSets = app.buttons["5세트 완료"]
+        XCTAssertTrue(bbbSets.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(identifier: "세트 완료로 표시").count, 5)
+        bbbSets.tap()
+        XCTAssertTrue(skip.waitForExistence(timeout: 5))
+        skip.tap()
+        let finish = app.buttons["세션 완료"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 5))
+        finish.tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+
+        tabs.buttons["기록"].tap()
+        XCTAssertTrue(app.staticTexts["11세트 완료"].waitForExistence(timeout: 5))
+    }
+
     /// Plain-style SwiftUI buttons sometimes ignore the first synthesized tap; retry by coordinate.
     private func tapUntil(_ element: XCUIElement, attempts: Int = 3, _ condition: () -> Bool) {
         for i in 0..<attempts {

@@ -29,12 +29,14 @@ struct ClassBEngine: ProgressionEngine {
         var working = state.workingKg
         let grouped = Dictionary(grouping: session.sets.filter { $0.isWorking }) { $0.exerciseId }
         for (id, sets) in grouped {
-            guard let ex = schedule.days.flatMap(\.exercises).first(where: { $0.id == id }) else { continue }
+            guard let ex = schedule.days.first(where: { $0.id == session.dayId })?.exercises.first(where: { $0.id == id }) else { continue }
             let completed = sets.filter(\.completed)
-            let hitTop = !completed.isEmpty && completed.count == sets.count && completed.allSatisfy { $0.reps >= ex.repMax }
+            guard let performedKg = completed.map(\.kg).min() else { continue }
+            let hitTop = completed.count == sets.count && completed.allSatisfy { $0.reps >= ex.repMax }
+            working[id] = performedKg
             if hitTop {
                 let delta = ex.plane == "lower" ? 5.0 : 2.5
-                working[id] = (working[id] ?? ex.seedKg ?? 20) + delta
+                working[id] = performedKg + delta
             }
         }
         return EngineAdvance(

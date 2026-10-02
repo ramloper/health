@@ -40,12 +40,13 @@ struct Hypertrophy6DayEngine: ProgressionEngine {
             let grouped = Dictionary(grouping: session.sets.filter { $0.isWorking && !$0.isWarmup }) { $0.exerciseId }
             for (exerciseId, sets) in grouped {
                 let completed = sets.filter(\.completed)
-                guard !completed.isEmpty,
-                      let ex = schedule.days.flatMap(\.exercises).first(where: { $0.id == exerciseId }) else { continue }
+                guard let performedKg = completed.map(\.kg).min(),
+                      let ex = schedule.days.first(where: { $0.id == session.dayId })?.exercises.first(where: { $0.id == exerciseId }) else { continue }
                 let hitTop = completed.count == sets.count && completed.allSatisfy { $0.reps >= ex.repMax }
+                working[exerciseId] = performedKg
                 if hitTop {
                     let delta = ex.plane == "lower" ? 5.0 : 2.5
-                    working[exerciseId] = (working[exerciseId] ?? ex.seedKg ?? 20) + delta
+                    working[exerciseId] = performedKg + delta
                 }
             }
         }

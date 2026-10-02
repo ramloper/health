@@ -20,7 +20,7 @@ struct TodayView: View {
     @State private var dayEditor: DayEditor?
     @State private var guideTarget: GuideTarget?
     @State private var pad: PadTarget?
-    @State private var focusExerciseId: String?
+    @State private var focusGroupId: String?
     @State private var showMetronome = false
     @State private var showRest = false
     @State private var showExitDialog = false
@@ -247,11 +247,11 @@ struct TodayView: View {
 
     private func sessionScroll(cycle: TrainingCycle, schedule: ProgramSchedule) -> some View {
         let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
-        let groups = grouped(rows)
+        let groups = TodayController.grouped(rows)
         let dayName = schedule.days.first(where: { $0.id == cycle.nextDayId })?.name ?? "운동"
         let doneCount = draft.filter(\.completed).count
-        let focusId = focusExerciseId ?? groups.first?.first?.exerciseId
-        let focusIndex = groups.firstIndex(where: { $0.first?.exerciseId == focusId }) ?? 0
+        let focusId = focusGroupId ?? groups.first?.first?.groupId
+        let focusIndex = groups.firstIndex(where: { $0.first?.groupId == focusId }) ?? 0
         let current = groups.indices.contains(focusIndex) ? groups[focusIndex] : []
         let next = groups.indices.contains(focusIndex + 1) ? groups[focusIndex + 1] : nil
         let unticked = current.filter { !isDone($0) }
@@ -295,7 +295,7 @@ struct TodayView: View {
                     }
                     if let next, let first = next.first {
                         Button {
-                            focusExerciseId = first.exerciseId
+                            focusGroupId = first.groupId
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 3) {
@@ -349,7 +349,7 @@ struct TodayView: View {
                         for set in unticked { markDone(set) }
                         startRest()
                     case .nextExercise:
-                        focusExerciseId = next?.first?.exerciseId
+                        focusGroupId = next?.first?.groupId
                     case .finish:
                         requestFinish(cycle: cycle, schedule: schedule, rows: rows)
                     }
@@ -369,12 +369,12 @@ struct TodayView: View {
         }
         .background(Gym.bg)
         .onAppear {
-            if focusExerciseId == nil { focusExerciseId = rows.first?.exerciseId }
+            if focusGroupId == nil { focusGroupId = rows.first?.groupId }
         }
         .onChange(of: cycle.nextDayId) { _, _ in
             let nextRows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
             seedDraft(nextRows)
-            focusExerciseId = nextRows.first?.exerciseId
+            focusGroupId = nextRows.first?.groupId
         }
         .sheet(item: $guideTarget) { target in
             guideSheet(target)
@@ -599,21 +599,6 @@ struct TodayView: View {
         return nil
     }
 
-    private func grouped(_ rows: [PrescribedSet]) -> [[PrescribedSet]] {
-        var result: [[PrescribedSet]] = []
-        var current: [PrescribedSet] = []
-        for row in rows {
-            if current.first?.exerciseId != row.exerciseId || current.first?.isBBB != row.isBBB {
-                if !current.isEmpty { result.append(current) }
-                current = [row]
-            } else {
-                current.append(row)
-            }
-        }
-        if !current.isEmpty { result.append(current) }
-        return result
-    }
-
     private func label(_ row: PrescribedSet, displayIndex: Int) -> String {
         if row.isWarmup { return "WU" }
         if row.isBBB { return "BBB" }
@@ -645,7 +630,7 @@ struct TodayView: View {
         let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
         loadHints(rows)
         seedDraft(rows)
-        focusExerciseId = rows.first?.exerciseId
+        focusGroupId = rows.first?.groupId
         isWorkingOut = true
         cycle.saveDraft(draft, dayId: cycle.nextDayId)
         try? context.save()
@@ -657,11 +642,11 @@ struct TodayView: View {
         guard cycle.draftDayId == cycle.nextDayId,
               let schedule = cycle.resolvedSchedule(),
               let saved = cycle.loadDraft() else {
-            cycle.clearDraft()
+            SessionService.clearDraft(cycle: cycle)
             return
         }
         let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
-        guard !rows.isEmpty else { cycle.clearDraft(); return }
+        guard !rows.isEmpty else { SessionService.clearDraft(cycle: cycle); return }
         seedDraft(rows)
         for set in saved {
             if let idx = draft.firstIndex(where: { $0.exerciseId == set.exerciseId && $0.setIndex == set.setIndex }) {
@@ -672,7 +657,7 @@ struct TodayView: View {
         }
         loadHints(rows)
         let firstOpen = rows.first(where: { !isDone($0) }) ?? rows.first
-        focusExerciseId = firstOpen?.exerciseId
+        focusGroupId = firstOpen?.groupId
         isWorkingOut = true
     }
 
@@ -697,8 +682,8 @@ struct TodayView: View {
         metronome.isOn = false
         isWorkingOut = false
         draft = []
-        focusExerciseId = nil
-        cycle.clearDraft()
+        focusGroupId = nil
+        SessionService.clearDraft(cycle: cycle)
         try? context.save()
     }
 
@@ -708,7 +693,7 @@ struct TodayView: View {
         let logged = draft
         isWorkingOut = false
         draft = []
-        focusExerciseId = nil
+        focusGroupId = nil
         SessionService.complete(
             context: context,
             cycle: cycle,

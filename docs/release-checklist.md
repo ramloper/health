@@ -6,7 +6,7 @@
 - [x] 아이폰 전용, 세로 모드, iOS 17 이상
 - [x] PrivacyInfo.xcprivacy (UserDefaults 사유 CA92.1)
 - [x] 암호화 미사용 선언 (ITSAppUsesNonExemptEncryption = NO)
-- [x] 유닛 테스트 32개, 스크린샷 UI 테스트
+- [x] 유닛 테스트 42개, 스크린샷·5/3/1 세션 완료 UI 테스트
 - [x] 스토어 문구: docs/app-store-metadata.md
 - [x] 개인정보 처리방침, 지원 페이지: docs/privacy-policy.md, docs/support.md
 

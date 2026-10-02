@@ -26,11 +26,12 @@ struct StartingStrengthEngine: ProgressionEngine {
         var stall = state.stall
         let grouped = Dictionary(grouping: session.sets.filter { $0.isWorking }) { $0.exerciseId }
         for (id, sets) in grouped {
-            guard let ex = schedule.days.flatMap(\.exercises).first(where: { $0.id == id }) else { continue }
+            guard let ex = schedule.days.first(where: { $0.id == session.dayId })?.exercises.first(where: { $0.id == id }) else { continue }
             // Skipped entirely (nothing ticked) is not a failed attempt: leave weight and stall count alone.
-            guard sets.contains(where: \.completed) else { continue }
+            guard let current = sets.filter(\.completed).map(\.kg).min() else { continue }
             let allHit = sets.allSatisfy { $0.completed && $0.reps >= ex.repMax }
-            let current = working[id] ?? ex.seedKg ?? 40
+            if current != (working[id] ?? ex.seedKg ?? 40) { stall[id] = 0 }
+            working[id] = current
             if allHit {
                 stall[id] = 0
                 let lower = id == "squat" || id == "deadlift"

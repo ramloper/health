@@ -223,6 +223,7 @@ struct CatalogView: View {
             Button(cycle?.programId == schedule.id ? "요일 고르기" : "바로 시작") {
                 pending = schedule
             }
+            .disabled(cycle?.programId == schedule.id && cycle?.hasDraft == true)
             Button("내 루틴으로 복사") { openCopy(schedule) }
             if cycle?.programId == schedule.id {
                 Button("처음부터 다시 시작", role: .destructive) { pendingRestart = schedule }

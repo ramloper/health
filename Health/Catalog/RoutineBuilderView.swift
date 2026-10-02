@@ -36,13 +36,22 @@ struct RoutineBuilderView: View {
     }
 
     private var canStart: Bool {
-        days.contains { !$0.isRest && !$0.exercises.isEmpty }
+        !isEditingCurrentWorkout && days.contains { !$0.isRest && !$0.exercises.isEmpty }
+    }
+
+    private var isEditingCurrentWorkout: Bool {
+        cycle?.programId == scheduleId && cycle?.hasDraft == true
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
+                    if isEditingCurrentWorkout {
+                        Text("진행 중인 운동과 기록은 유지돼요. 수정한 루틴은 운동을 마치거나 나간 뒤 적용돼요.")
+                            .font(.subheadline)
+                            .foregroundStyle(Gym.muted)
+                    }
                     GymCard {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("루틴 이름")

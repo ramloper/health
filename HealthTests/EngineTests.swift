@@ -644,3 +644,263 @@ final class ReviewFixTests: XCTestCase {
         XCTAssertEqual(ScheduleExercise.makeCustom(name: "컬", reps: 10).repLabel, "10회")
     }
 }
+
+final class WorkoutRegressionTests: XCTestCase {
+    private let profile = ProfileInputs.documentDefaults
+
+    private var schema: Schema {
+        Schema([AthleteProfile.self, TrainingCycle.self, WorkoutSession.self,
+                SetLog.self, PersonalRecord.self, CustomRoutine.self])
+    }
+
+    private func makeContext() throws -> ModelContext {
+        let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        return ModelContext(container)
+    }
+
+    private func weightSchedules() throws -> [ProgramSchedule] {
+        var schedules = try [Hypertrophy6DayEngine.id, ClassBEngine.pplId, ClassBEngine.phulId,
+                             ClassBEngine.ulId, StartingStrengthEngine.id].map(CatalogTests.schedule)
+        schedules.append(.copiedAsCustom(from: schedules[0]))
+        return schedules
+    }
+
+    private func customSchedule() -> ProgramSchedule {
+        var schedule = ProgramSchedule.makeCustom(name: "수정 테스트")
+        schedule.days[0].exercises = [.makeCustom(name: "벤치프레스", sets: 3, reps: 10, seedKg: 30)]
+        return schedule
+    }
+
+    func testBBBIsASeparateReachableGroup() throws {
+        let schedule = try CatalogTests.schedule(FiveThreeOneBBBEngine.id)
+        var state = ProgramCatalog.seededState(schedule: schedule, profile: profile)
+        state.nextDayId = "bench"
+        let rows = FiveThreeOneBBBEngine().prescribe(schedule: schedule, profile: profile, state: state)
+        let groups = TodayController.grouped(rows)
+        XCTAssertEqual(groups.map(\.count), [6, 5])
+        let main = try XCTUnwrap(groups.first?.first)
+        let bbb = try XCTUnwrap(groups.last?.first)
+        XCTAssertEqual(main.exerciseId, bbb.exerciseId)
+        XCTAssertNotEqual(main.groupId, bbb.groupId)
+        XCTAssertEqual(groups.firstIndex { $0.first?.groupId == bbb.groupId }, 1)
+        XCTAssertTrue(groups[1].allSatisfy(\.isBBB))
+    }
+
+    func testManualWeightsAndMixedWeightsDriveNextPrescription() throws {
+        for schedule in try weightSchedules() {
+            let engine = EngineRegistry.engine(for: schedule.id)
+            let state = ProgramCatalog.seededState(schedule: schedule, profile: profile)
+            let ex = try XCTUnwrap(schedule.days.first?.exercises.first)
+            let delta = ex.plane == "lower" ? 5.0 : 2.5
+            let rows = engine.prescribe(schedule: schedule, profile: profile, state: state)
+            for weights in [[20.0], [100.0], [100.0, 20.0]] {
+                var logged = TodayController.loggedMatchingPrescribe(rows)
+                for i in logged.indices {
+                    logged[i].completed = logged[i].exerciseId == ex.id
+                    if logged[i].completed { logged[i].kg = weights[i % weights.count] }
+                }
+                var next = engine.advance(schedule: schedule, profile: profile, state: state,
+                    session: CompletedSession(dayId: state.nextDayId, sets: logged)).applied(to: state)
+                next.nextDayId = state.nextDayId
+                let nextRows = engine.prescribe(schedule: schedule, profile: profile, state: next)
+                XCTAssertEqual(nextRows.first?.kg, weights.min()! + delta, schedule.id)
+            }
+        }
+    }
+
+    func testPartialOrMissedSetsKeepActualWeightWithoutIncreasing() throws {
+        for schedule in try weightSchedules() {
+            let engine = EngineRegistry.engine(for: schedule.id)
+            let state = ProgramCatalog.seededState(schedule: schedule, profile: profile)
+            let rows = engine.prescribe(schedule: schedule, profile: profile, state: state)
+            let ex = try XCTUnwrap(schedule.days.first?.exercises.first)
+            for partial in [false, true] {
+                var logged = TodayController.loggedMatchingPrescribe(rows)
+                for i in logged.indices {
+                    logged[i].completed = logged[i].exerciseId == ex.id && (!partial || logged[i].setIndex == 0)
+                    if logged[i].completed {
+                        logged[i].kg = 20
+                        if !partial { logged[i].reps = ex.repMax - 1 }
+                    }
+                }
+                let next = engine.advance(schedule: schedule, profile: profile, state: state,
+                    session: CompletedSession(dayId: state.nextDayId, sets: logged)).applied(to: state)
+                XCTAssertEqual(next.workingKg[ex.id], 20, schedule.id)
+                for other in schedule.days[0].exercises.dropFirst() {
+                    XCTAssertEqual(next.workingKg[other.id], state.workingKg[other.id], schedule.id)
+                }
+            }
+        }
+    }
+
+    func testChangingStartingStrengthWeightResetsPreviousStalls() throws {
+        let schedule = try CatalogTests.schedule(StartingStrengthEngine.id)
+        let engine = StartingStrengthEngine()
+        var state = ProgramCatalog.seededState(schedule: schedule, profile: profile)
+        state.stall["squat"] = 2
+        var logged = TodayController.loggedMatchingPrescribe(engine.prescribe(schedule: schedule, profile: profile, state: state))
+        for i in logged.indices where logged[i].exerciseId == "squat" {
+            logged[i].kg = 20
+            logged[i].reps = 3
+        }
+        let next = engine.advance(schedule: schedule, profile: profile, state: state,
+            session: CompletedSession(dayId: state.nextDayId, sets: logged)).applied(to: state)
+        XCTAssertEqual(next.workingKg["squat"], 20)
+        XCTAssertEqual(next.stall["squat"], 1)
+    }
+
+    func testDeloadDoesNotReplaceNormalWorkingWeights() throws {
+        let schedule = try CatalogTests.schedule(Hypertrophy6DayEngine.id)
+        let engine = Hypertrophy6DayEngine()
+        var state = ProgramCatalog.seededState(schedule: schedule, profile: profile)
+        state.deloadSessionsRemaining = 6
+        var logged = TodayController.loggedMatchingPrescribe(engine.prescribe(schedule: schedule, profile: profile, state: state))
+        for i in logged.indices { logged[i].kg = 20 }
+        let next = engine.advance(schedule: schedule, profile: profile, state: state,
+            session: CompletedSession(dayId: state.nextDayId, sets: logged)).applied(to: state)
+        XCTAssertEqual(next.workingKg, state.workingKg)
+        XCTAssertEqual(next.deloadSessionsRemaining, 5)
+    }
+
+    @MainActor
+    func testChangingOneRMPreservesOtherTrainingMaxesAndUpdatesAliases() throws {
+        let edits: [(inout ProfileInputs) -> Void] = [
+            { $0.bench1RM = 100 }, { $0.squat1RM = 150 },
+            { $0.dead1RM = 180 }, { $0.ohp1RM = 80 }, { _ in }
+        ]
+        for programId in [FiveThreeOneBBBEngine.id, NSuns5DayEngine.id] {
+            let context = try makeContext()
+            let schedule = try CatalogTests.schedule(programId)
+            let cycle = SessionService.startCycle(context: context, schedule: schedule, profile: profile)
+            let progressed = ["bench": 90.0, "squat": 120.0, "deadlift": 140.0, "ohp": 65.0, "press": 65.0, "cap": 90.0]
+            for edit in edits {
+                cycle.setTrainingMaxes(progressed)
+                var updated = profile
+                edit(&updated)
+                SessionService.syncTrainingMaxes(cycle: cycle, profile: updated, previousProfile: profile)
+                for (lift, previous) in progressed {
+                    let expected = updated.oneRM(forLift: lift) == profile.oneRM(forLift: lift)
+                        ? previous : Kg.trainingMax(fromOneRM: updated.oneRM(forLift: lift))
+                    XCTAssertEqual(cycle.state.tm[lift], expected, "\(programId): \(lift)")
+                }
+            }
+        }
+    }
+
+    @MainActor
+    func testSelectingDayPreservesEditedProgramAndRestartRestoresOriginal() throws {
+        let context = try makeContext()
+        let original = try CatalogTests.schedule(Hypertrophy6DayEngine.id)
+        let cycle = SessionService.startCycle(context: context, schedule: original, profile: profile)
+        var exercises = original.days[0].exercises
+        exercises.removeLast()
+        exercises[0].sets = 2
+        SessionService.replaceDayExercises(cycle: cycle, dayId: "chest-a", exercises: exercises)
+        cycle.setWorkingKg("bench", 80)
+        let again = SessionService.startCycle(context: context, schedule: original, profile: profile, startingDayId: "back-a")
+        XCTAssertTrue(again === cycle)
+        XCTAssertEqual(again.nextDayId, "back-a")
+        XCTAssertEqual(again.resolvedSchedule()?.days[0].exercises, exercises)
+        XCTAssertEqual(again.state.workingKg["bench"], 80)
+        SessionService.selectDay(cycle: cycle, dayId: "rest")
+        XCTAssertEqual(cycle.nextDayId, "back-a")
+        let restarted = SessionService.startCycle(context: context, schedule: original, profile: profile, restart: true)
+        XCTAssertEqual(restarted.resolvedSchedule(), original)
+        XCTAssertEqual(restarted.state.workingKg["bench"], 55)
+    }
+
+    @MainActor
+    func testEditingActiveWorkoutKeepsRowsAndAppliesChangesAfterCompletion() throws {
+        let context = try makeContext()
+        let original = customSchedule()
+        let routine = SessionService.persistCustom(context: context, existing: nil, schedule: original, cycle: nil)
+        let cycle = SessionService.startCycle(context: context, schedule: original, profile: profile)
+        let rows = SessionService.prescribe(cycle: cycle, schedule: original, profile: profile)
+        let logged = TodayController.loggedMatchingPrescribe(rows)
+        cycle.saveDraft(logged, dayId: cycle.nextDayId)
+        var edited = original
+        edited.days[0].exercises[0].sets = 4
+        edited.days[0].exercises[0].targetReps = 15
+        edited.days[0].exercises[0].name = "수정한 운동"
+        edited.days.append(ProgramDay(id: "next", name: "다음 날", isRest: false,
+                                     exercises: [.makeCustom(name: "스쿼트", seedKg: 80)]))
+        _ = SessionService.persistCustom(context: context, existing: routine, schedule: edited, cycle: cycle)
+        XCTAssertEqual(routine.resolvedSchedule(), edited)
+        XCTAssertEqual(cycle.resolvedSchedule(), original)
+        XCTAssertEqual(cycle.pendingSchedule, edited)
+        XCTAssertEqual(cycle.loadDraft(), logged)
+        XCTAssertEqual(SessionService.prescribe(cycle: cycle, schedule: try XCTUnwrap(cycle.resolvedSchedule()), profile: profile), rows)
+        // Even selecting another day from the catalog must not replace a running workout.
+        SessionService.startCycle(context: context, schedule: edited, profile: profile, startingDayId: "next")
+        XCTAssertEqual(cycle.nextDayId, original.days[0].id)
+        XCTAssertEqual(cycle.loadDraft(), logged)
+        let session = SessionService.complete(context: context, cycle: cycle, schedule: original,
+                                              profile: profile, rows: rows, logged: logged)
+        XCTAssertEqual(session.dayId, original.days[0].id)
+        XCTAssertEqual(session.sets.count, 3)
+        XCTAssertTrue(session.sets.allSatisfy { $0.exerciseName == "벤치프레스" && $0.completed })
+        XCTAssertEqual(cycle.state.workingKg[original.days[0].exercises[0].id], 32.5)
+        XCTAssertEqual(cycle.resolvedSchedule(), edited)
+        XCTAssertEqual(cycle.nextDayId, "next")
+        XCTAssertEqual(cycle.state.workingKg[edited.days[1].exercises[0].id], 80)
+        XCTAssertFalse(cycle.hasDraft)
+        XCTAssertNil(cycle.pendingSchedule)
+    }
+
+    @MainActor
+    func testDiscardAppliesLatestEditIncludingDeletedCurrentDay() throws {
+        let context = try makeContext()
+        let original = customSchedule()
+        let cycle = SessionService.startCycle(context: context, schedule: original, profile: profile)
+        let rows = SessionService.prescribe(cycle: cycle, schedule: original, profile: profile)
+        cycle.saveDraft(TodayController.loggedMatchingPrescribe(rows), dayId: cycle.nextDayId)
+        var edited = original
+        edited.days[0].exercises[0].sets = 4
+        SessionService.applyScheduleToCycle(cycle, edited)
+        edited.days = [ProgramDay(id: "replacement", name: "새 요일", isRest: false,
+                                 exercises: [.makeCustom(name: "스쿼트", seedKg: 80)])]
+        SessionService.applyScheduleToCycle(cycle, edited)
+        XCTAssertEqual(cycle.resolvedSchedule(), original)
+        SessionService.clearDraft(cycle: cycle)
+        XCTAssertEqual(cycle.resolvedSchedule(), edited)
+        XCTAssertEqual(cycle.nextDayId, "replacement")
+        XCTAssertFalse(cycle.hasDraft)
+        XCTAssertNil(cycle.pendingSchedule)
+        XCTAssertEqual(cycle.trainingSessionsCompleted, 0)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<WorkoutSession>()).isEmpty)
+    }
+
+    @MainActor
+    func testDeferredEditAndDraftSurviveStoreReopening() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let config = ModelConfiguration(url: directory.appendingPathComponent("review.store"))
+        let original = customSchedule()
+        var edited = original
+        edited.days[0].exercises[0].sets = 4
+        try autoreleasepool {
+            let container = try ModelContainer(for: schema, configurations: config)
+            let context = ModelContext(container)
+            let cycle = SessionService.startCycle(context: context, schedule: original, profile: profile)
+            let rows = SessionService.prescribe(cycle: cycle, schedule: original, profile: profile)
+            var logged = TodayController.loggedMatchingPrescribe(rows)
+            logged[0].kg = 25
+            logged[1].completed = false
+            cycle.saveDraft(logged, dayId: cycle.nextDayId)
+            SessionService.applyScheduleToCycle(cycle, edited)
+            try context.save()
+        }
+        let reopened = try ModelContainer(for: schema, configurations: config)
+        let context = ModelContext(reopened)
+        let cycle = try XCTUnwrap(context.fetch(FetchDescriptor<TrainingCycle>()).first)
+        XCTAssertEqual(cycle.resolvedSchedule(), original)
+        XCTAssertEqual(cycle.pendingSchedule, edited)
+        XCTAssertEqual(cycle.loadDraft()?.count, 3)
+        XCTAssertEqual(cycle.loadDraft()?.first?.kg, 25)
+        XCTAssertEqual(cycle.loadDraft()?[1].completed, false)
+        SessionService.clearDraft(cycle: cycle)
+        XCTAssertEqual(cycle.resolvedSchedule(), edited)
+        XCTAssertNil(cycle.pendingSchedule)
+    }
+}
