@@ -6,7 +6,14 @@ struct ExerciseEditorView: View {
     var usesOwnStack: Bool = true
     var onSave: ([ScheduleExercise]) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var showPicker = false
+    @ObservedObject private var theme = ThemeStore.shared
+    @State private var picker: PickerTarget?
+
+    /// `replacingSlotId == nil` adds a slot; otherwise "운동 바꾸기" swaps that slot's variant.
+    private struct PickerTarget: Identifiable {
+        let id = UUID()
+        var replacingSlotId: String?
+    }
 
     var body: some View {
         Group {
@@ -16,12 +23,23 @@ struct ExerciseEditorView: View {
                 editorBody
             }
         }
-        .sheet(isPresented: $showPicker) {
-            ExercisePickerSheet { picked in
-                exercises.append(picked)
+        .sheet(item: $picker) { target in
+            ExercisePickerSheet(title: target.replacingSlotId == nil ? "운동 추가" : "운동 바꾸기",
+                                close: { picker = nil }) { picked in
+                apply(picked, replacing: target.replacingSlotId)
             }
         }
         .presentationBackground(Gym.bg)
+    }
+
+    private func apply(_ picked: ScheduleExercise, replacing slotId: String?) {
+        guard let slotId else {
+            exercises.append(picked)
+            return
+        }
+        guard let index = exercises.firstIndex(where: { $0.id == slotId }) else { return }
+        exercises[index] = exercises[index].replacingVariant(picked.variantId, name: picked.name,
+                                                             exerciseId: picked.exerciseId, plane: picked.plane)
     }
 
     private var editorBody: some View {
@@ -38,7 +56,7 @@ struct ExerciseEditorView: View {
                     exerciseCard(index: index)
                 }
                 Button {
-                    showPicker = true
+                    picker = PickerTarget(replacingSlotId: nil)
                 } label: {
                     Label("운동 추가", systemImage: "plus.circle.fill")
                         .font(.headline)
@@ -74,9 +92,20 @@ struct ExerciseEditorView: View {
         return GymCard {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 8) {
-                    TextField("운동 이름", text: nameBinding(at: index))
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(Gym.text)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(ex.displayName)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(Gym.text)
+                        Button {
+                            picker = PickerTarget(replacingSlotId: ex.id)
+                        } label: {
+                            Label("운동 바꾸기", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Gym.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("exercise-replace-\(ex.id)")
+                    }
                     Spacer(minLength: 8)
                     if exercises.count > 1 {
                         Button { move(index, by: -1) } label: {
@@ -144,20 +173,6 @@ struct ExerciseEditorView: View {
         }
     }
 
-    private func nameBinding(at index: Int) -> Binding<String> {
-        Binding(
-            get: { exercises.indices.contains(index) ? exercises[index].name : "" },
-            set: { name in
-                guard exercises.indices.contains(index) else { return }
-                exercises[index].name = name
-                // Library exercises carry their own plane; only free-text `other` variants are guessed from the name.
-                if exercises[index].exerciseId == ExerciseLibrary.otherId {
-                    exercises[index].plane = PlaneGuess.guess(name)
-                }
-            }
-        )
-    }
-
     private func move(_ index: Int, by offset: Int) {
         let next = index + offset
         guard exercises.indices.contains(index), exercises.indices.contains(next) else { return }
@@ -165,36 +180,52 @@ struct ExerciseEditorView: View {
     }
 }
 
+
+/// Two-step picker (D2): this root owns `close` and a `NavigationStack`; tapping an exercise pushes
+/// `VariantPickerView`, long-pressing adds its generic variant. Every pick goes through `onPick` + `close`.
 struct ExercisePickerSheet: View {
+    var title: String = "운동 추가"
+    /// Dismisses the sheet (sets the presenting state); pushed screens call it after picking.
+    var close: () -> Void
     var onPick: (ScheduleExercise) -> Void
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
+    @ObservedObject private var theme = ThemeStore.shared
     @State private var query = ""
     @State private var group: MuscleGroup?
-    @State private var selected: [ScheduleExercise] = []
+    @State private var equipment: Equipment?
+    @State private var path: [String] = []
 
     private var library: ExerciseLibrary { ExerciseLibrary.shared }
 
-    private var filtered: [LibraryExercise] {
-        library.search(query, group: group).map(\.exercise)
+    private var hits: [ExerciseLibrary.SearchHit] {
+        library.search(query, group: group, equipment: equipment)
     }
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var hasExactMatch: Bool {
-        let q = SearchNormalizer.normalize(trimmedQuery)
-        return library.exercises.contains { SearchNormalizer.normalize($0.name) == q }
+    var body: some View {
+        NavigationStack(path: $path) {
+            root
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: String.self) { exerciseId in
+                    VariantPickerView(exerciseId: exerciseId, onPick: onPick, close: close)
+                }
+        }
+        .tint(Gym.accent)
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
+    private var root: some View {
+        let hits = hits
+        let unfiltered = group == nil && equipment == nil && trimmedQuery.isEmpty
+        return VStack(spacing: 0) {
             HStack {
-                Text("운동 추가")
+                Text(title)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(Gym.text)
                 Spacer()
-                Button { dismiss() } label: {
+                Button(action: close) {
                     Image(systemName: "xmark")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(Gym.muted)
@@ -203,6 +234,8 @@ struct ExercisePickerSheet: View {
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("닫기")
+                .accessibilityIdentifier("picker-close")
             }
             .padding(.horizontal, 24)
             .padding(.top, 16)
@@ -210,17 +243,11 @@ struct ExercisePickerSheet: View {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(Gym.tabIdle)
-                TextField("운동 이름 검색 · 없으면 직접 추가", text: $query)
+                TextField("운동·브랜드 검색", text: $query)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Gym.text)
-                if !trimmedQuery.isEmpty, !hasExactMatch {
-                    Button("추가") {
-                        addFreeText(trimmedQuery)
-                        query = ""
-                    }
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Gym.accent)
-                }
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier("picker-search")
             }
             .padding(14)
             .background(Gym.card)
@@ -228,83 +255,135 @@ struct ExercisePickerSheet: View {
             .padding(.horizontal, 24)
             .padding(.top, 18)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach([MuscleGroup?.none] + MuscleGroup.allCases.map(Optional.some), id: \.self) { item in
-                        Button {
-                            group = item
-                        } label: {
-                            Text(item?.label ?? "전체")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(group == item ? Gym.bg : Gym.muted)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(group == item ? Gym.text : Gym.card)
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 24)
+            chipRow([MuscleGroup?.none] + MuscleGroup.allCases.map(Optional.some), selection: $group,
+                    label: { $0?.label ?? "전체" }, identifier: { "group-chip-\($0?.rawValue ?? "all")" })
                 .padding(.top, 14)
-            }
+            chipRow([Equipment?.none] + Equipment.allCases.map(Optional.some), selection: $equipment,
+                    label: { $0?.label ?? "전체" }, identifier: { "equip-chip-\($0?.rawValue ?? "all")" })
+                .padding(.top, 8)
 
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(filtered) { exercise in
-                        let on = selected.contains { $0.variantId == exercise.id }
-                        Button { toggle(exercise) } label: {
-                            HStack(spacing: 14) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(exercise.name)
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundStyle(Gym.text)
-                                    Text("\(exercise.group.label) · \(exercise.equipment.label)")
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(Gym.faint)
-                                }
-                                Spacer()
-                                Text(on ? "✓" : "+")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(on ? .white : Gym.muted)
-                                    .frame(width: 34, height: 34)
-                                    .background(on ? Gym.accent : Gym.elevated)
-                                    .clipShape(Circle())
-                            }
-                            .padding(.vertical, 14)
-                        }
-                        .buttonStyle(.plain)
+                    if hits.isEmpty && !trimmedQuery.isEmpty {
+                        freeTextRow(trimmedQuery)
+                    }
+                    ForEach(hits) { hit in
+                        exerciseRow(hit)
+                    }
+                    if unfiltered {
+                        otherRow
                     }
                 }
                 .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
-
-            GymCTA(title: selected.isEmpty ? "닫기" : "\(selected.count)개 추가하기") {
-                selected.forEach(onPick)
-                dismiss()
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .scrollDismissesKeyboard(.immediately)
+            .padding(.top, 6)
         }
         .background(Gym.bg)
     }
 
-    /// Library exercises are added as their generic variant.
-    private func toggle(_ exercise: LibraryExercise) {
-        if let i = selected.firstIndex(where: { $0.variantId == exercise.id }) {
-            selected.remove(at: i)
-        } else {
-            selected.append(.makeCustom(exerciseId: exercise.id))
+    private func chipRow<Item: Hashable>(_ items: [Item], selection: Binding<Item>, label: @escaping (Item) -> String,
+                                         identifier: @escaping (Item) -> String) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(items, id: \.self) { item in
+                    let on = selection.wrappedValue == item
+                    Button {
+                        selection.wrappedValue = item
+                    } label: {
+                        Text(label(item))
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(on ? Gym.bg : Gym.muted)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(on ? Gym.text : Gym.card)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                    .accessibilityIdentifier(identifier(item))
+                }
+            }
+            .padding(.horizontal, 24)
         }
     }
 
-    /// Free text becomes a user variant of `other`, never a new library exercise.
-    private func addFreeText(_ name: String) {
-        selected.append(.makeCustom(
-            exerciseId: ExerciseLibrary.otherId,
-            variantId: "\(ExerciseLibrary.otherId)/u-\(UUID().uuidString)",
-            name: name,
-            plane: PlaneGuess.guess(name)
-        ))
+    private func exerciseRow(_ hit: ExerciseLibrary.SearchHit) -> some View {
+        let exercise = hit.exercise
+        return rowContent(title: exercise.name,
+                          subtitle: "\(exercise.group.label) · \(exercise.equipment.label)",
+                          hint: matchedHint(hit.matchedVariants))
+            .onLongPressGesture(minimumDuration: 0.4) { addGeneric(exercise.id) }
+            .onTapGesture { path.append(exercise.id) }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { path.append(exercise.id) }
+            .accessibilityAction(named: "일반으로 추가") { addGeneric(exercise.id) }
+            .accessibilityIdentifier("ex-row-\(exercise.id)")
+    }
+
+    /// `other` has no generic variant, so no long press: it only opens the user-variant list.
+    private var otherRow: some View {
+        rowContent(title: ExerciseLibrary.otherName, subtitle: "내가 만든 운동", hint: nil)
+            .onTapGesture { path.append(ExerciseLibrary.otherId) }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { path.append(ExerciseLibrary.otherId) }
+            .accessibilityIdentifier("ex-row-\(ExerciseLibrary.otherId)")
+    }
+
+    private func freeTextRow(_ text: String) -> some View {
+        Button {
+            guard let slot = UserVariantStore.addFreeText(text, context: context, library: library) else { return }
+            onPick(slot)
+            close()
+        } label: {
+            Label("'\(text)' 직접 추가", systemImage: "plus.circle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Gym.accent)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("picker-add-free")
+    }
+
+    private func rowContent(title: String, subtitle: String, hint: String?) -> some View {
+        HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Gym.text)
+                Text(subtitle)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Gym.faint)
+                if let hint {
+                    Text(hint)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Gym.accent)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Gym.tabIdle)
+        }
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
+    }
+
+    private func matchedHint(_ variants: [LibraryVariant]) -> String? {
+        guard !variants.isEmpty else { return nil }
+        let names = variants.prefix(2).compactMap { library.displayName(variantId: $0.id) }
+        let more = variants.count > 2 ? " 외 \(variants.count - 2)개" : ""
+        return names.joined(separator: ", ") + more
+    }
+
+    private func addGeneric(_ exerciseId: String) {
+        onPick(.makeCustom(exerciseId: exerciseId))
+        close()
     }
 }

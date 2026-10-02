@@ -111,7 +111,9 @@ struct ScheduleExercise: Codable, Equatable, Identifiable, Hashable {
 
     /// Library display name (with `label` prefix), falling back to the stored `name` for user variants.
     var displayName: String {
-        let base = ExerciseLibrary.shared.displayName(variantId: variantId) ?? name
+        // User variants (`<exerciseId>/u-…`) are not in the library; their stored name is the nickname.
+        let isUserVariant = variantId.contains("/u-")
+        let base = isUserVariant ? name : (ExerciseLibrary.shared.displayName(variantId: variantId) ?? name)
         guard let label, !label.isEmpty else { return base }
         return "\(label) \(base)"
     }

@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var editingLift: LiftPad?
     @State private var showMetronome = false
     @State private var showRest = false
+    @State private var showGymBrands = false
     @State private var exportURL: ExportFile?
     @State private var exportError: String?
 
@@ -76,6 +77,11 @@ struct ProfileView: View {
                             settingRow("메트로놈 BPM", value: "\(metronome.bpm) ›") {
                                 showMetronome = true
                             }
+                            settingRow("우리 헬스장 브랜드", value: "\(profile.gymBrandIds.count)개 ›") {
+                                showGymBrands = true
+                            }
+                            .accessibilityValue("\(profile.gymBrandIds.count)개")
+                            .accessibilityIdentifier("gym-brands-row")
                         }
                         .padding(.horizontal, 20)
                     }
@@ -112,6 +118,9 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showRest) {
             RestDurationSheet()
+        }
+        .sheet(isPresented: $showGymBrands) {
+            GymBrandsSheet(profile: profile)
         }
         .sheet(item: $exportURL) { file in
             ShareSheet(items: [file.url])
@@ -186,6 +195,7 @@ struct ProfileView: View {
                     .foregroundStyle(Gym.faint)
             }
             .padding(.vertical, 16)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

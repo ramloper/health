@@ -1,5 +1,23 @@
 import SwiftUI
+import SwiftData
 import UIKit
+
+/// AC19 header above the guide title: "브랜드 · 변형명" for a non-generic variant, nickname only for brandless ones.
+enum GuideVariantHeader {
+    /// nil for the generic variant (`variantId == exerciseId`).
+    static func text(exerciseId: String, variantId: String, fallbackName: String?, userVariant: UserVariant?,
+                     library: ExerciseLibrary = .shared) -> String? {
+        guard variantId != exerciseId else { return nil }
+        if let v = library.variant(id: variantId), !v.isGeneric {
+            return v.brandId.flatMap { library.brand(id: $0)?.name }.map { "\($0) · \(v.name)" } ?? v.name
+        }
+        if let userVariant {
+            return userVariant.brandLabel(in: library).map { "\($0) · \(userVariant.nickname)" } ?? userVariant.nickname
+        }
+        let stored = fallbackName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return stored.isEmpty ? nil : stored
+    }
+}
 
 struct ExerciseGuideSheet: View {
     var exerciseId: String
@@ -10,20 +28,39 @@ struct ExerciseGuideSheet: View {
     var prKg: Double? = nil
     var e1rm: Double? = nil
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var theme = ThemeStore.shared
+    @Query private var userVariants: [UserVariant]
 
     var body: some View {
         let g = GuideContent.make(exerciseId: exerciseId, variantId: variantId, fallbackName: name)
         let chips = g.chips
+        let header = GuideVariantHeader.text(exerciseId: exerciseId, variantId: variantId, fallbackName: name,
+                                             userVariant: userVariants.first { $0.id == variantId })
+        // A variant opens its base exercise's guide; the variant itself is named in the header.
+        let title = header != nil && !g.isOther ? (ExerciseLibrary.shared.info(for: exerciseId)?.name ?? g.title) : g.title
         VStack(spacing: 0) {
             Capsule()
-                .fill(Color(hex: 0x3A3A45).opacity(ThemeStore.shared.isDark ? 1 : 0.25))
+                .fill(Color(hex: 0x3A3A45).opacity(theme.isDark ? 1 : 0.25))
                 .frame(width: 40, height: 4)
                 .padding(.top, 10)
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(g.title)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(Gym.text)
+                    if let header, g.isOther {
+                        Text(header)
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(Gym.text)
+                            .accessibilityIdentifier("guide-variant-header")
+                    } else {
+                        if let header {
+                            Text(header)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(Gym.accent)
+                                .accessibilityIdentifier("guide-variant-header")
+                        }
+                        Text(title)
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(Gym.text)
+                    }
                     HStack(spacing: 6) {
                         ForEach(Array(chips.enumerated()), id: \.offset) { index, chip in
                             Text(chip)
