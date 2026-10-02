@@ -6,6 +6,7 @@ struct RootView: View {
     @ObservedObject private var theme = ThemeStore.shared
     @Query private var profiles: [AthleteProfile]
     @Query(filter: #Predicate<TrainingCycle> { $0.isActive }) private var cycles: [TrainingCycle]
+    @AppStorage(StoreBootstrap.noticeKey) private var storeNotice = ""
 
     var body: some View {
         Group {
@@ -18,9 +19,28 @@ struct RootView: View {
         .preferredColorScheme(theme.isDark ? .dark : .light)
         .tint(Gym.accent)
         .task { seedIfNeeded() }
+        .alert(storeNoticeText ?? "", isPresented: storeNoticeShown) {
+            Button("확인", role: .cancel) { storeNotice = "" }
+        }
         .onChange(of: theme.isDark) { _, isDark in
             Gym.applyChrome(isDark: isDark)
         }
+    }
+
+    private var storeNoticeText: String? {
+        switch storeNotice {
+        case StoreBootstrap.noticeReset: "1.1부터 기록 구조가 바뀌어 이전 기록은 초기화됐어요."
+        case StoreBootstrap.noticeCorrupt: "저장소를 열 수 없어 새로 만들었어요. 이전 파일은 기기에 보관했어요."
+        default: nil
+        }
+    }
+
+    /// One-time store notice; dismissing clears the key. Never shown in `--demo`.
+    private var storeNoticeShown: Binding<Bool> {
+        Binding(
+            get: { !HealthApp.isDemo && storeNoticeText != nil },
+            set: { if !$0 { storeNotice = "" } }
+        )
     }
 
     private func seedIfNeeded() {

@@ -9,6 +9,8 @@ final class AthleteProfile {
     var ohp1RM: Double
     var preferredProgramId: String
     var hasCompletedOnboarding: Bool
+    /// Brands available at the user's gym; shown first in the variant picker.
+    var gymBrandIds: [String] = []
 
     init(
         bench1RM: Double = 75,
@@ -282,5 +284,38 @@ final class CustomRoutine {
         name = schedule.name
         scheduleJSON = TrainingCycle.encodeSchedule(schedule) ?? scheduleJSON
         updatedAt = .now
+    }
+}
+
+/// A user-made variant of a library exercise (brand + nickname). `other` variants carry no brand.
+@Model
+final class UserVariant {
+    @Attribute(.unique) var id: String
+    var exerciseId: String
+    var brandId: String?
+    var brandName: String?
+    var nickname: String
+    var plane: String
+    var isHidden: Bool
+    var createdAt: Date
+
+    init(
+        id: String,
+        exerciseId: String,
+        brandId: String? = nil,
+        brandName: String? = nil,
+        nickname: String,
+        plane: String,
+        isHidden: Bool = false,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.exerciseId = exerciseId
+        self.brandId = brandId
+        self.brandName = brandName
+        self.nickname = nickname
+        self.plane = plane
+        self.isHidden = isHidden
+        self.createdAt = createdAt
     }
 }

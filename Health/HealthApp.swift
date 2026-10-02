@@ -3,25 +3,15 @@ import SwiftData
 
 @main
 struct HealthApp: App {
-    private static let schema = Schema([
-        AthleteProfile.self,
-        TrainingCycle.self,
-        WorkoutSession.self,
-        SetLog.self,
-        PersonalRecord.self,
-        CustomRoutine.self
-    ])
-
     /// `--demo` (screenshot runs) uses a throwaway in-memory store seeded with sample data.
-    private static let isDemo = CommandLine.arguments.contains("--demo")
+    static let isDemo = CommandLine.arguments.contains("--demo")
 
     private let container: ModelContainer
 
     init() {
         Gym.applyChrome()
-        let config = ModelConfiguration(isStoredInMemoryOnly: Self.isDemo)
         do {
-            container = try ModelContainer(for: Self.schema, configurations: config)
+            container = try StoreBootstrap.makeContainer(isDemo: Self.isDemo).0
         } catch {
             fatalError("ModelContainer: \(error)")
         }

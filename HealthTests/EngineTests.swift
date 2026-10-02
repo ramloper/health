@@ -506,14 +506,7 @@ final class CustomRoutineTests: XCTestCase {
 
     @MainActor
     func testPersistCustomAndApplyToActiveCycle() throws {
-        let schema = Schema([
-            AthleteProfile.self,
-            TrainingCycle.self,
-            WorkoutSession.self,
-            SetLog.self,
-            PersonalRecord.self,
-            CustomRoutine.self
-        ])
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let context = ModelContext(container)
         var schedule = ProgramSchedule.makeCustom(name: "저장 루틴")
@@ -538,10 +531,7 @@ final class CustomRoutineTests: XCTestCase {
 
 final class ReviewFixTests: XCTestCase {
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([
-            AthleteProfile.self, TrainingCycle.self, WorkoutSession.self,
-            SetLog.self, PersonalRecord.self, CustomRoutine.self
-        ])
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         return ModelContext(container)
     }
@@ -649,8 +639,7 @@ final class WorkoutRegressionTests: XCTestCase {
     private let profile = ProfileInputs.documentDefaults
 
     private var schema: Schema {
-        Schema([AthleteProfile.self, TrainingCycle.self, WorkoutSession.self,
-                SetLog.self, PersonalRecord.self, CustomRoutine.self])
+        Schema(versionedSchema: SchemaV2.self)
     }
 
     private func makeContext() throws -> ModelContext {
