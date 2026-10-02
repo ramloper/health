@@ -77,6 +77,29 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(firstCard.waitForExistence(timeout: 10))
         sleep(1)
         snap("08-shop", app: app)
+
+        // 8. Picker step 2: "내 헬스장" section (demo gym brands: hammer, technogym)
+        tabs.buttons["루틴"].tap()
+        let routine = app.buttons.containing(.staticText, identifier: "집 헬스 3일").firstMatch
+        XCTAssertTrue(routine.waitForExistence(timeout: 5))
+        let editDay = app.buttons["운동 편집"].firstMatch
+        tapUntil(routine, app: app) { editDay.exists }
+        let addExercise = app.buttons["운동 추가"]
+        tapUntil(editDay, app: app) { addExercise.exists }
+        let pickerClose = app.buttons["picker-close"]
+        tapUntil(addExercise, app: app) { pickerClose.exists }
+        let chest = app.buttons["group-chip-chest"]
+        tapUntil(chest, app: app) { chest.isSelected }
+        let machine = app.buttons["equip-chip-machine"]
+        tapUntil(machine, app: app) { machine.isSelected }
+        let chestPress = app.descendants(matching: .any)["ex-row-machine-chest-press"]
+        XCTAssertTrue(chestPress.waitForExistence(timeout: 5))
+        let gymSection = app.descendants(matching: .any)["gym-section"]
+        tapUntil(chestPress, app: app) { gymSection.exists }
+        sleep(1)
+        snap("09-picker", app: app)
+        app.navigationBars.buttons.firstMatch.tap()
+        tapUntil(pickerClose, app: app) { !pickerClose.exists }
     }
 
     func testFiveThreeOneCompletesMainAndBBBSets() {

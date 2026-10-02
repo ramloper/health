@@ -7,6 +7,7 @@ enum DemoSeed {
     @MainActor
     static func seed(_ context: ModelContext) {
         let profile = AthleteProfile(bench1RM: 90, squat1RM: 130, dead1RM: 160, ohp1RM: 60, hasCompletedOnboarding: true)
+        profile.gymBrandIds = ["hammer", "technogym"] // 09-picker: "내 헬스장" section
         context.insert(profile)
         guard let schedule = ProgramCatalog.load(Hypertrophy6DayEngine.id) else { return }
         let cycle = SessionService.startCycle(context: context, schedule: schedule, profile: profile.inputs)
