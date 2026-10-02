@@ -43,7 +43,11 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "Resources/Programs/**"
+          - "Resources/Exercises/**"
       - path: Health/Resources/Programs
+        type: folder
+        buildPhase: resources
+      - path: Health/Resources/Exercises
         type: folder
         buildPhase: resources
     settings:
