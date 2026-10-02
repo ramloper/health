@@ -1,5 +1,8 @@
 import Foundation
 import SwiftData
+import os
+
+private let scheduleLogger = Logger(subsystem: "com.wooram.health", category: "schedule")
 
 @Model
 final class AthleteProfile {
@@ -87,10 +90,14 @@ final class TrainingCycle {
     }
 
     func resolvedSchedule() -> ProgramSchedule? {
-        if !scheduleJSON.isEmpty,
-           let data = scheduleJSON.data(using: .utf8),
-           let schedule = try? JSONDecoder().decode(ProgramSchedule.self, from: data) {
-            return schedule
+        if !scheduleJSON.isEmpty {
+            if let schedule = try? JSONDecoder().decode(ProgramSchedule.self, from: Data(scheduleJSON.utf8)) {
+                return schedule
+            }
+            scheduleLogger.error("scheduleDecodeFallback(\(self.programId, privacy: .public))")
+            #if DEBUG
+            assertionFailure("scheduleDecodeFallback(\(programId))")
+            #endif
         }
         return ProgramCatalog.load(programId)
     }
@@ -208,7 +215,7 @@ final class SetLog {
     var isAMRAP: Bool
     var isWarmup: Bool
     var isBBB: Bool
-    /// Program-independent key (guide title) so history and PRs merge across programs.
+    /// Record key: the variant id (`ScheduleExercise.liftKey`), shared across programs.
     var liftKey: String = ""
     /// Position within the session, since to-many relationships are unordered.
     var orderIndex: Int = 0

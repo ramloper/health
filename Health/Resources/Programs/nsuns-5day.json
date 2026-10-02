@@ -3,24 +3,24 @@
   "name": "nSuns 5-day",
   "days": [
     {"id": "cap", "name": "캡", "isRest": false, "exercises": [
-      {"id": "cap", "name": "클로즈그립 벤치", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"},
-      {"id": "cap-t2", "name": "T2 벤치", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "upper"}
+      {"id": "cap", "name": "클로즈그립 벤치", "exerciseId": "close-grip-bench", "progressionTag": "t1", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"},
+      {"id": "cap-t2", "name": "T2 벤치", "exerciseId": "close-grip-bench", "progressionTag": "t2", "label": "T2", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "upper"}
     ]},
     {"id": "ohp", "name": "OHP", "isRest": false, "exercises": [
-      {"id": "ohp", "name": "오버헤드 프레스", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"},
-      {"id": "ohp-t2", "name": "T2 프레스", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "upper"}
+      {"id": "ohp", "name": "오버헤드 프레스", "exerciseId": "ohp", "progressionTag": "t1", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"},
+      {"id": "ohp-t2", "name": "T2 프레스", "exerciseId": "ohp", "progressionTag": "t2", "label": "T2", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "upper"}
     ]},
     {"id": "dead", "name": "데드", "isRest": false, "exercises": [
-      {"id": "deadlift", "name": "데드리프트", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower"},
-      {"id": "dead-t2", "name": "T2 데드", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "lower"}
+      {"id": "deadlift", "name": "데드리프트", "exerciseId": "deadlift", "progressionTag": "t1", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower"},
+      {"id": "dead-t2", "name": "T2 데드", "exerciseId": "deadlift", "progressionTag": "t2", "label": "T2", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "lower"}
     ]},
     {"id": "bench", "name": "벤치", "isRest": false, "exercises": [
-      {"id": "bench", "name": "벤치프레스", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"},
-      {"id": "bench-t2", "name": "T2 벤치", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "upper"}
+      {"id": "bench", "name": "벤치프레스", "exerciseId": "bench", "progressionTag": "t1", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper"},
+      {"id": "bench-t2", "name": "T2 벤치", "exerciseId": "bench", "progressionTag": "t2", "label": "T2", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "upper"}
     ]},
     {"id": "squat", "name": "스쿼트", "isRest": false, "exercises": [
-      {"id": "squat", "name": "스쿼트", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower"},
-      {"id": "squat-t2", "name": "T2 스쿼트", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "lower"}
+      {"id": "squat", "name": "스쿼트", "exerciseId": "squat", "progressionTag": "t1", "sets": 6, "repMin": 1, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower"},
+      {"id": "squat-t2", "name": "T2 스쿼트", "exerciseId": "squat", "progressionTag": "t2", "label": "T2", "sets": 6, "repMin": 1, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "lower"}
     ]}
   ]
 }

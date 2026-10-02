@@ -1,7 +1,10 @@
 import Foundation
 import SwiftData
+import os
 
 enum SessionService {
+    private static let logger = Logger(subsystem: "com.wooram.health", category: "session")
+
     static func prescribe(cycle: TrainingCycle, schedule: ProgramSchedule, profile: ProfileInputs) -> [PrescribedSet] {
         EngineRegistry.engine(for: cycle.programId).prescribe(schedule: schedule, profile: profile, state: cycle.state)
     }
@@ -24,7 +27,11 @@ enum SessionService {
         for (order, item) in logged.enumerated() {
             let row = rows.first(where: { $0.exerciseId == item.exerciseId && $0.setIndex == item.setIndex })
             let name = row?.exerciseName ?? item.exerciseId
-            let key = ExerciseGuide.liftKey(id: item.exerciseId, name: name)
+            // Without its prescribed row the set has no variant id; never key a record by slot id or name.
+            let key = row?.liftKey ?? ""
+            if row == nil {
+                logger.error("prSkippedNoRow(\(item.exerciseId, privacy: .public))")
+            }
             let log = SetLog(
                 exerciseId: item.exerciseId,
                 exerciseName: name,
@@ -42,7 +49,7 @@ enum SessionService {
             )
             context.insert(log)
             log.session = session
-            if item.completed, item.isWorking, !item.isWarmup, item.reps >= 1 {
+            if !key.isEmpty, item.completed, item.isWorking, !item.isWarmup, item.reps >= 1 {
                 updatePR(context: context, liftId: key, kg: item.kg, date: now)
             }
         }
@@ -138,8 +145,8 @@ enum SessionService {
             cycle.nextDayId = DayCursor.firstTrainingDayId(in: schedule)
         }
         for ex in schedule.days.flatMap(\.exercises) {
-            if cycle.state.workingKg[ex.id] == nil {
-                cycle.setWorkingKg(ex.id, ex.seedKg ?? 20)
+            if cycle.state.workingKg[ex.stateKey] == nil {
+                cycle.setWorkingKg(ex.stateKey, ex.seedKg ?? 20)
             }
         }
     }
@@ -160,13 +167,12 @@ enum SessionService {
         found?.first?.apply(schedule)
     }
 
-    /// Most recent completed working set for this lift, matched by program-independent key
-    /// (falls back to the raw exercise id for logs written before `liftKey` existed).
-    static func lastHint(context: ModelContext, exerciseId: String, exerciseName: String = "") -> (kg: Double, reps: Int)? {
-        let key = ExerciseGuide.liftKey(id: exerciseId, name: exerciseName)
+    /// Most recent completed working set for this variant (record key), across programs.
+    static func lastHint(context: ModelContext, liftKey: String) -> (kg: Double, reps: Int)? {
+        guard !liftKey.isEmpty else { return nil }
         var descriptor = FetchDescriptor<SetLog>(
             predicate: #Predicate {
-                ($0.liftKey == key || $0.exerciseId == exerciseId) && $0.completed && $0.isWorking && !$0.isWarmup
+                $0.liftKey == liftKey && $0.completed && $0.isWorking && !$0.isWarmup
             },
             sortBy: [SortDescriptor(\.date, order: .reverse), SortDescriptor(\.kg, order: .reverse)]
         )
@@ -175,10 +181,10 @@ enum SessionService {
         return (log.kg, log.reps)
     }
 
-    static func personalRecordKg(context: ModelContext, exerciseId: String, exerciseName: String = "") -> Double? {
-        let key = ExerciseGuide.liftKey(id: exerciseId, name: exerciseName)
+    static func personalRecordKg(context: ModelContext, liftKey: String) -> Double? {
+        guard !liftKey.isEmpty else { return nil }
         var descriptor = FetchDescriptor<PersonalRecord>(
-            predicate: #Predicate { $0.liftId == key || $0.liftId == exerciseId },
+            predicate: #Predicate { $0.liftId == liftKey },
             sortBy: [SortDescriptor(\.kg, order: .reverse)]
         )
         descriptor.fetchLimit = 1
@@ -203,6 +209,8 @@ enum SessionService {
         struct Profile: Codable { var bench1RM, squat1RM, dead1RM, ohp1RM: Double }
         struct Set: Codable {
             var exercise: String
+            /// Variant id (record key).
+            var liftId: String
             var setIndex: Int
             var kg: Double
             var reps: Int
@@ -216,7 +224,8 @@ enum SessionService {
             var dayId: String
             var sets: [Set]
         }
-        struct Record: Codable { var lift: String; var kg: Double; var date: Date }
+        /// `lift` is the display name, `liftId` the variant id.
+        struct Record: Codable { var lift: String; var liftId: String; var kg: Double; var date: Date }
         var exportedAt: Date
         var profile: Profile?
         var sessions: [Session]
@@ -227,6 +236,8 @@ enum SessionService {
         let profile = try context.fetch(FetchDescriptor<AthleteProfile>()).first
         let sessions = try context.fetch(FetchDescriptor<WorkoutSession>(sortBy: [SortDescriptor(\.date)]))
         let prs = try context.fetch(FetchDescriptor<PersonalRecord>(sortBy: [SortDescriptor(\.liftId)]))
+        let nicknames = Dictionary(try context.fetch(FetchDescriptor<UserVariant>()).map { ($0.id, $0.nickname) },
+                                   uniquingKeysWith: { first, _ in first })
         let doc = ExportDocument(
             exportedAt: .now,
             profile: profile.map { .init(bench1RM: $0.bench1RM, squat1RM: $0.squat1RM, dead1RM: $0.dead1RM, ohp1RM: $0.ohp1RM) },
@@ -236,12 +247,15 @@ enum SessionService {
                     programId: session.programId,
                     dayId: session.dayId,
                     sets: session.sets.sorted { $0.orderIndex < $1.orderIndex }.map {
-                        .init(exercise: $0.exerciseName, setIndex: $0.setIndex, kg: $0.kg, reps: $0.reps,
+                        .init(exercise: $0.exerciseName, liftId: $0.liftKey, setIndex: $0.setIndex, kg: $0.kg, reps: $0.reps,
                               completed: $0.completed, isWarmup: $0.isWarmup, isAMRAP: $0.isAMRAP)
                     }
                 )
             },
-            personalRecords: prs.map { .init(lift: $0.liftId, kg: $0.kg, date: $0.date) }
+            personalRecords: prs.map {
+                let name = ExerciseLibrary.shared.displayName(variantId: $0.liftId) ?? nicknames[$0.liftId] ?? $0.liftId
+                return .init(lift: name, liftId: $0.liftId, kg: $0.kg, date: $0.date)
+            }
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

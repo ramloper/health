@@ -15,13 +15,28 @@ struct ProgramSchedule: Codable, Equatable, Identifiable {
         )
     }
 
+    /// Copies keep each slot's progression separate. Tags are preserved; when the source is a bundled program,
+    /// variants that repeat across untagged slots (Starting Strength's shared squat) get the original day id as tag,
+    /// assigned before day ids are rewritten — 1.0 copies achieved the same by giving every slot its own id.
     static func copiedAsCustom(from schedule: ProgramSchedule) -> ProgramSchedule {
-        let days = DayCursor.trainingDays(in: schedule).enumerated().map { index, day in
+        let trainingDays = DayCursor.trainingDays(in: schedule)
+        var autoTagged = Set<String>()
+        if !schedule.isCustom {
+            let untagged = trainingDays.flatMap(\.exercises).filter { $0.progressionTag == nil }
+            autoTagged = Set(Dictionary(grouping: untagged, by: \.variantId).filter { $0.value.count >= 2 }.keys)
+        }
+        let days = trainingDays.enumerated().map { index, day in
             ProgramDay(
                 id: "day-\(UUID().uuidString)",
                 name: day.name.isEmpty ? "\(index + 1)일차" : day.name,
                 isRest: false,
-                exercises: day.exercises.map { $0.copiedAsCustom() }
+                exercises: day.exercises.map { ex in
+                    var copy = ex.copiedAsCustom()
+                    if copy.progressionTag == nil, autoTagged.contains(ex.variantId) {
+                        copy.progressionTag = day.id
+                    }
+                    return copy
+                }
             )
         }
         return ProgramSchedule(
@@ -44,7 +59,9 @@ struct ProgramDay: Codable, Equatable, Identifiable, Hashable {
 }
 
 struct ScheduleExercise: Codable, Equatable, Identifiable, Hashable {
+    /// Slot id: identifies the row within a schedule and session. Not a record key.
     var id: String
+    /// Name stored with the slot; display falls back to it when the library has no name for `variantId`.
     var name: String
     var sets: Int
     var repMin: Int
@@ -55,6 +72,27 @@ struct ScheduleExercise: Codable, Equatable, Identifiable, Hashable {
     var seedKg: Double?
     var substituteId: String?
     var isCompound: Bool?
+    /// Library base exercise id (`other` for free-text user variants).
+    var exerciseId: String
+    /// Library or user variant id. Generic variant id == `exerciseId`.
+    var variantId: String
+    /// Separates repeated slots of one variant within a program (`a`/`b`, `heavy`/`light`, `t1`/`t2`).
+    var progressionTag: String? = nil
+    /// Short prefix for display ("T2", "라이트").
+    var label: String? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, sets, repMin, repMax, isWorking, isOptional, plane, seedKg, substituteId, isCompound
+        case exerciseId, variantId, progressionTag, label
+    }
+
+    /// Record key for `SetLog.liftKey` and `PersonalRecord.liftId`.
+    var liftKey: String { variantId }
+
+    /// Progression key for `CycleState.workingKg` and `stall`.
+    var stateKey: String {
+        progressionTag.map { "\(variantId)|\($0)" } ?? variantId
+    }
 
     /// "5~8회" for ranges, "8회" when min == max.
     var repLabel: String {
@@ -71,24 +109,109 @@ struct ScheduleExercise: Codable, Equatable, Identifiable, Hashable {
         }
     }
 
-    static func makeCustom(name: String, sets: Int = 3, reps: Int = 10, seedKg: Double = 20) -> ScheduleExercise {
-        ScheduleExercise(
+    /// Library display name (with `label` prefix), falling back to the stored `name` for user variants.
+    var displayName: String {
+        let base = ExerciseLibrary.shared.displayName(variantId: variantId) ?? name
+        guard let label, !label.isEmpty else { return base }
+        return "\(label) \(base)"
+    }
+
+    /// A new user-added slot: no progression tag. `name` defaults to the library display name; `plane` defaults to
+    /// the library exercise's plane, or a name guess for `other` (pass `UserVariant.plane` for those).
+    static func makeCustom(
+        exerciseId: String,
+        variantId: String? = nil,
+        name: String? = nil,
+        plane: String? = nil,
+        sets: Int = 3,
+        reps: Int = 10,
+        seedKg: Double = 20
+    ) -> ScheduleExercise {
+        let library = ExerciseLibrary.shared
+        let base = library.exercise(id: exerciseId)
+        let variant = variantId ?? exerciseId
+        let title = name ?? library.displayName(variantId: variant) ?? variant
+        return ScheduleExercise(
             id: "ex-\(UUID().uuidString)",
-            name: name,
+            name: title,
             sets: sets,
             repMin: reps,
             repMax: reps,
             isWorking: true,
             isOptional: false,
-            plane: ExerciseGuide.defaultPlane(for: name),
-            seedKg: seedKg
+            plane: plane ?? base?.plane ?? PlaneGuess.guess(title),
+            seedKg: seedKg,
+            isCompound: base?.isCompound ?? false,
+            exerciseId: exerciseId,
+            variantId: variant
         )
     }
 
+    /// New slot id; variant, tag and label are preserved.
     func copiedAsCustom() -> ScheduleExercise {
         var copy = self
         copy.id = "ex-\(UUID().uuidString)"
         return copy
+    }
+
+    /// "운동 바꾸기": swaps the machine but keeps the slot, sets, reps, seed and progression tag.
+    func replacingVariant(_ variantId: String, name: String, exerciseId: String, plane: String) -> ScheduleExercise {
+        var copy = self
+        copy.variantId = variantId
+        copy.name = name
+        copy.exerciseId = exerciseId
+        copy.plane = plane
+        return copy
+    }
+}
+
+extension ScheduleExercise {
+    /// `exerciseId` is required (1.0 schedules without it fail to decode); `variantId` defaults to `exerciseId`.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        sets = try c.decode(Int.self, forKey: .sets)
+        repMin = try c.decode(Int.self, forKey: .repMin)
+        repMax = try c.decode(Int.self, forKey: .repMax)
+        isWorking = try c.decode(Bool.self, forKey: .isWorking)
+        isOptional = try c.decode(Bool.self, forKey: .isOptional)
+        plane = try c.decode(String.self, forKey: .plane)
+        seedKg = try c.decodeIfPresent(Double.self, forKey: .seedKg)
+        substituteId = try c.decodeIfPresent(String.self, forKey: .substituteId)
+        isCompound = try c.decodeIfPresent(Bool.self, forKey: .isCompound)
+        exerciseId = try c.decode(String.self, forKey: .exerciseId)
+        variantId = try c.decodeIfPresent(String.self, forKey: .variantId) ?? exerciseId
+        progressionTag = try c.decodeIfPresent(String.self, forKey: .progressionTag)
+        label = try c.decodeIfPresent(String.self, forKey: .label)
+    }
+}
+
+/// Completed sets of one day grouped by `stateKey`, in `day.exercises` order. Slots that share a stateKey on the
+/// same day form one group; each set keeps its own slot so rep targets stay per slot.
+struct ProgressionGroup {
+    var stateKey: String
+    /// First slot of the group in day order; decides plane and seed.
+    var lead: ScheduleExercise
+    var entries: [(set: CompletedSet, slot: ScheduleExercise)]
+
+    var sets: [CompletedSet] { entries.map(\.set) }
+
+    static func grouped(day: ProgramDay?, sets: [CompletedSet]) -> [ProgressionGroup] {
+        guard let day else { return [] }
+        var groups: [ProgressionGroup] = []
+        var seenSlots = Set<String>()
+        for slot in day.exercises where seenSlots.insert(slot.id).inserted {
+            let mine = sets.filter { $0.exerciseId == slot.id }
+            guard !mine.isEmpty else { continue }
+            let entries = mine.map { (set: $0, slot: slot) }
+            if let i = groups.firstIndex(where: { $0.stateKey == slot.stateKey }) {
+                groups[i].entries += entries
+            } else {
+                groups.append(ProgressionGroup(stateKey: slot.stateKey, lead: slot, entries: entries))
+            }
+        }
+        return groups
     }
 }
 
@@ -111,6 +234,24 @@ struct ProfileInputs: Equatable {
     }
 }
 
+/// Which profile 1RM the guide sheet shows for an exercise. Display only; prescriptions never use it.
+enum OneRMMap {
+    private static let table: [String: String] = [
+        "bench": "bench", "close-grip-bench": "bench", "incline-bench": "bench",
+        "db-bench-press": "bench", "smith-bench-press": "bench",
+        "squat": "squat", "front-squat": "squat", "smith-squat": "squat",
+        "deadlift": "dead",
+        "ohp": "ohp"
+    ]
+
+    /// `bench`/`squat`/`dead`/`ohp` (keys of `ProfileInputs.oneRM(forLift:)`), or nil.
+    static func lift(forExerciseId exerciseId: String) -> String? {
+        table[exerciseId]
+    }
+
+    static var mappedExerciseIds: [String] { table.keys.sorted() }
+}
+
 struct CycleState: Equatable {
     var programId: String
     var nextDayId: String
@@ -128,6 +269,8 @@ struct PrescribedSet: Equatable, Identifiable {
     var groupId: String { "\(exerciseId)-\(isBBB ? "bbb" : "main")" }
     var exerciseId: String
     var exerciseName: String
+    /// Record key (variant id) of the slot this row was prescribed from.
+    var liftKey: String
     var setIndex: Int
     var kg: Double
     var reps: Int

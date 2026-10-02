@@ -7,12 +7,12 @@
       "name": "가슴A",
       "isRest": false,
       "exercises": [
-        {"id": "bench", "name": "벤치프레스", "sets": 4, "repMin": 5, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 55, "isCompound": true},
-        {"id": "incline-press", "name": "인클라인 프레스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 22.5},
-        {"id": "pec-fly", "name": "케이블 플라이", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15},
-        {"id": "lateral-raise", "name": "사이드 레터럴", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
-        {"id": "tricep-pushdown", "name": "트라이셉스 푸시다운", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
-        {"id": "overhead-extension", "name": "오버헤드 익스텐션", "sets": 2, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15}
+        {"id": "bench", "name": "벤치프레스", "exerciseId": "bench", "sets": 4, "repMin": 5, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 55, "isCompound": true},
+        {"id": "incline-press", "name": "인클라인 프레스", "exerciseId": "db-incline-press", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 22.5},
+        {"id": "pec-fly", "name": "케이블 플라이", "exerciseId": "cable-fly", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15},
+        {"id": "lateral-raise", "name": "사이드 레터럴", "exerciseId": "db-lateral-raise", "progressionTag": "a", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
+        {"id": "tricep-pushdown", "name": "트라이셉스 푸시다운", "exerciseId": "cable-pushdown", "progressionTag": "a", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
+        {"id": "overhead-extension", "name": "오버헤드 익스텐션", "exerciseId": "cable-overhead-extension", "sets": 2, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15}
       ]
     },
     {
@@ -20,13 +20,13 @@
       "name": "등A",
       "isRest": false,
       "exercises": [
-        {"id": "lat-pulldown", "name": "랫풀다운", "sets": 4, "repMin": 6, "repMax": 10, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40, "substituteId": "pullup"},
-        {"id": "chest-supported-row", "name": "체스트서포트 로우", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
-        {"id": "straight-arm-pulldown", "name": "스트레이트암 풀다운", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
-        {"id": "face-pull", "name": "페이스풀", "sets": 3, "repMin": 15, "repMax": 20, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15},
-        {"id": "shrug", "name": "슈러그", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
-        {"id": "curl", "name": "바벨 컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
-        {"id": "hammer-curl", "name": "해머컬", "sets": 2, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": true, "plane": "upper", "seedKg": 12}
+        {"id": "lat-pulldown", "name": "랫풀다운", "exerciseId": "cable-lat-pulldown", "sets": 4, "repMin": 6, "repMax": 10, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40, "substituteId": "pullup"},
+        {"id": "chest-supported-row", "name": "체스트서포트 로우", "exerciseId": "machine-chest-supported-row", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+        {"id": "straight-arm-pulldown", "name": "스트레이트암 풀다운", "exerciseId": "cable-straight-arm-pulldown", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
+        {"id": "face-pull", "name": "페이스풀", "exerciseId": "cable-face-pull", "sets": 3, "repMin": 15, "repMax": 20, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 15},
+        {"id": "shrug", "name": "슈러그", "exerciseId": "shrug", "progressionTag": "heavy", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+        {"id": "curl", "name": "바벨 컬", "exerciseId": "curl", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
+        {"id": "hammer-curl", "name": "해머컬", "exerciseId": "db-hammer-curl", "sets": 2, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": true, "plane": "upper", "seedKg": 12}
       ]
     },
     {
@@ -34,12 +34,12 @@
       "name": "하체A",
       "isRest": false,
       "exercises": [
-        {"id": "squat", "name": "백스쿼트", "sets": 4, "repMin": 5, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
-        {"id": "leg-press", "name": "레그프레스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 100},
-        {"id": "leg-extension", "name": "레그 익스텐션", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 30},
-        {"id": "leg-curl", "name": "레그컬", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 25},
-        {"id": "standing-calf", "name": "스탠딩 카프", "sets": 4, "repMin": 8, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 40},
-        {"id": "abs", "name": "복근", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": true, "plane": "lower", "seedKg": 0}
+        {"id": "squat", "name": "백스쿼트", "exerciseId": "squat", "sets": 4, "repMin": 5, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
+        {"id": "leg-press", "name": "레그프레스", "exerciseId": "machine-leg-press", "progressionTag": "heavy", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 100},
+        {"id": "leg-extension", "name": "레그 익스텐션", "exerciseId": "machine-leg-extension", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 30},
+        {"id": "leg-curl", "name": "레그컬", "exerciseId": "machine-lying-leg-curl", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 25},
+        {"id": "standing-calf", "name": "스탠딩 카프", "exerciseId": "machine-standing-calf-raise", "sets": 4, "repMin": 8, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 40},
+        {"id": "abs", "name": "복근", "exerciseId": "crunch", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": true, "plane": "lower", "seedKg": 0}
       ]
     },
     {
@@ -47,12 +47,12 @@
       "name": "가슴B",
       "isRest": false,
       "exercises": [
-        {"id": "ohp", "name": "OHP", "sets": 4, "repMin": 5, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 42.5, "isCompound": true},
-        {"id": "incline-bench", "name": "인클라인 벤치", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
-        {"id": "lateral-raise-b", "name": "사이드 레터럴", "sets": 4, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
-        {"id": "light-flat", "name": "라이트 플랫 DB", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 16},
-        {"id": "dips", "name": "딥스", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 0},
-        {"id": "pushdown-b", "name": "푸시다운", "sets": 2, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20}
+        {"id": "ohp", "name": "OHP", "exerciseId": "ohp", "sets": 4, "repMin": 5, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 42.5, "isCompound": true},
+        {"id": "incline-bench", "name": "인클라인 벤치", "exerciseId": "incline-bench", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+        {"id": "lateral-raise-b", "name": "사이드 레터럴", "exerciseId": "db-lateral-raise", "progressionTag": "b", "sets": 4, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
+        {"id": "light-flat", "name": "라이트 플랫 DB", "exerciseId": "db-bench-press", "label": "라이트", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 16},
+        {"id": "dips", "name": "딥스", "exerciseId": "dips", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 0},
+        {"id": "pushdown-b", "name": "푸시다운", "exerciseId": "cable-pushdown", "progressionTag": "b", "sets": 2, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20}
       ]
     },
     {
@@ -60,12 +60,12 @@
       "name": "등B",
       "isRest": false,
       "exercises": [
-        {"id": "barbell-row", "name": "바벨로우", "sets": 4, "repMin": 6, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40, "substituteId": "chest-supported-row", "isCompound": true},
-        {"id": "seated-row", "name": "시티드 케이블 로우", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
-        {"id": "neutral-pulldown", "name": "뉴트럴 풀다운", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
-        {"id": "rear-delt", "name": "리어델트 플라이", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
-        {"id": "preacher-curl", "name": "프리처 컬", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
-        {"id": "light-shrug", "name": "라이트 슈러그", "sets": 2, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": true, "plane": "upper", "seedKg": 30}
+        {"id": "barbell-row", "name": "바벨로우", "exerciseId": "bent-over-row", "sets": 4, "repMin": 6, "repMax": 8, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40, "substituteId": "chest-supported-row", "isCompound": true},
+        {"id": "seated-row", "name": "시티드 케이블 로우", "exerciseId": "cable-seated-row", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+        {"id": "neutral-pulldown", "name": "뉴트럴 풀다운", "exerciseId": "cable-neutral-pulldown", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40},
+        {"id": "rear-delt", "name": "리어델트 플라이", "exerciseId": "db-rear-delt-fly", "sets": 3, "repMin": 12, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 8},
+        {"id": "preacher-curl", "name": "프리처 컬", "exerciseId": "preacher-curl", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 20},
+        {"id": "light-shrug", "name": "라이트 슈러그", "exerciseId": "shrug", "progressionTag": "light", "label": "라이트", "sets": 2, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": true, "plane": "upper", "seedKg": 30}
       ]
     },
     {
@@ -73,12 +73,12 @@
       "name": "하체B",
       "isRest": false,
       "exercises": [
-        {"id": "deadlift", "name": "데드리프트", "sets": 3, "repMin": 3, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 90, "substituteId": "rdl", "isCompound": true},
-        {"id": "rdl", "name": "RDL", "sets": 3, "repMin": 6, "repMax": 10, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 70},
-        {"id": "seated-leg-curl", "name": "시티드 레그컬", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 25},
-        {"id": "hip-thrust", "name": "힙 쓰러스트", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 60},
-        {"id": "light-quad", "name": "라이트 레그프레스", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80},
-        {"id": "seated-calf", "name": "시티드 카프", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 30}
+        {"id": "deadlift", "name": "데드리프트", "exerciseId": "deadlift", "sets": 3, "repMin": 3, "repMax": 6, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 90, "substituteId": "rdl", "isCompound": true},
+        {"id": "rdl", "name": "RDL", "exerciseId": "romanian-deadlift", "sets": 3, "repMin": 6, "repMax": 10, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 70},
+        {"id": "seated-leg-curl", "name": "시티드 레그컬", "exerciseId": "machine-seated-leg-curl", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 25},
+        {"id": "hip-thrust", "name": "힙 쓰러스트", "exerciseId": "hip-thrust", "sets": 3, "repMin": 8, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 60},
+        {"id": "light-quad", "name": "라이트 레그프레스", "exerciseId": "machine-leg-press", "progressionTag": "light", "label": "라이트", "sets": 3, "repMin": 10, "repMax": 12, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80},
+        {"id": "seated-calf", "name": "시티드 카프", "exerciseId": "machine-seated-calf-raise", "sets": 3, "repMin": 10, "repMax": 15, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 30}
       ]
     },
     {"id": "rest", "name": "휴식", "isRest": true, "exercises": []}

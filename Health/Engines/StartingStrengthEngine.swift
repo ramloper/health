@@ -8,10 +8,10 @@ struct StartingStrengthEngine: ProgressionEngine {
         guard let day = schedule.days.first(where: { $0.id == state.nextDayId }) else { return [] }
         var rows: [PrescribedSet] = []
         for ex in day.exercises {
-            let kg = state.workingKg[ex.id] ?? ex.seedKg ?? 40
+            let kg = state.workingKg[ex.stateKey] ?? ex.seedKg ?? 40
             for i in 0..<ex.sets {
                 rows.append(PrescribedSet(
-                    exerciseId: ex.id, exerciseName: ex.name, setIndex: i,
+                    exerciseId: ex.id, exerciseName: ex.name, liftKey: ex.liftKey, setIndex: i,
                     kg: kg, reps: ex.repMax, repMax: ex.repMax,
                     isWorking: true, isWarmup: false, isAMRAP: false, isBBB: false, isOptional: false,
                     repMin: ex.repMin
@@ -24,24 +24,25 @@ struct StartingStrengthEngine: ProgressionEngine {
     func advance(schedule: ProgramSchedule, profile: ProfileInputs, state: CycleState, session: CompletedSession) -> EngineAdvance {
         var working = state.workingKg
         var stall = state.stall
-        let grouped = Dictionary(grouping: session.sets.filter { $0.isWorking }) { $0.exerciseId }
-        for (id, sets) in grouped {
-            guard let ex = schedule.days.first(where: { $0.id == session.dayId })?.exercises.first(where: { $0.id == id }) else { continue }
+        let day = schedule.days.first(where: { $0.id == session.dayId })
+        for group in ProgressionGroup.grouped(day: day, sets: session.sets.filter { $0.isWorking }) {
+            let key = group.stateKey
+            let ex = group.lead
             // Skipped entirely (nothing ticked) is not a failed attempt: leave weight and stall count alone.
-            guard let current = sets.filter(\.completed).map(\.kg).min() else { continue }
-            let allHit = sets.allSatisfy { $0.completed && $0.reps >= ex.repMax }
-            if current != (working[id] ?? ex.seedKg ?? 40) { stall[id] = 0 }
-            working[id] = current
+            guard let current = group.sets.filter(\.completed).map(\.kg).min() else { continue }
+            let allHit = group.entries.allSatisfy { $0.set.completed && $0.set.reps >= $0.slot.repMax }
+            if current != (working[key] ?? ex.seedKg ?? 40) { stall[key] = 0 }
+            working[key] = current
             if allHit {
-                stall[id] = 0
-                let lower = id == "squat" || id == "deadlift"
-                working[id] = current + (lower ? 5 : 2.5)
+                stall[key] = 0
+                let lower = ex.exerciseId == "squat" || ex.exerciseId == "deadlift"
+                working[key] = current + (lower ? 5 : 2.5)
             } else {
-                let fails = (stall[id] ?? 0) + 1
-                stall[id] = fails
+                let fails = (stall[key] ?? 0) + 1
+                stall[key] = fails
                 if fails >= 3 {
-                    working[id] = Kg.nearest(current * 0.9)
-                    stall[id] = 0
+                    working[key] = Kg.nearest(current * 0.9)
+                    stall[key] = 0
                 }
             }
         }

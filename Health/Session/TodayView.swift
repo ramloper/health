@@ -33,9 +33,10 @@ struct TodayView: View {
     }
 
     private struct GuideTarget: Identifiable {
-        var id: String { name + idKey }
+        var id: String { variantId + "|" + name }
         var name: String
-        var idKey: String
+        var exerciseId: String
+        var variantId: String
     }
 
     private struct PadTarget: Identifiable {
@@ -175,12 +176,12 @@ struct TodayView: View {
                             }
                             ForEach(Array(exercises.enumerated()), id: \.element.id) { index, ex in
                                 Button {
-                                    guideTarget = GuideTarget(name: ex.name, idKey: ex.id)
+                                    guideTarget = GuideTarget(name: ex.name, exerciseId: ex.exerciseId, variantId: ex.variantId)
                                 } label: {
                                     HStack(spacing: 12) {
                                         GymIndexBadge(text: "\(index + 1)")
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(ex.name)
+                                            Text(ex.displayName)
                                                 .font(.system(size: 15, weight: .semibold))
                                                 .foregroundStyle(Gym.text)
                                             Text("\(ex.sets)세트 \(ex.repLabel)")
@@ -433,17 +434,18 @@ struct TodayView: View {
 
     private func guideSheet(_ target: GuideTarget) -> some View {
         ExerciseGuideSheet(
+            exerciseId: target.exerciseId,
+            variantId: target.variantId,
             name: target.name,
-            id: target.idKey,
-            last: SessionService.lastHint(context: context, exerciseId: target.idKey, exerciseName: target.name),
-            prKg: SessionService.personalRecordKg(context: context, exerciseId: target.idKey, exerciseName: target.name),
-            e1rm: mappedOneRM(name: target.name)
+            last: SessionService.lastHint(context: context, liftKey: target.variantId),
+            prKg: SessionService.personalRecordKg(context: context, liftKey: target.variantId),
+            e1rm: OneRMMap.lift(forExerciseId: target.exerciseId).map { profile.inputs.oneRM(forLift: $0) }
         )
     }
 
     private func sessionExerciseCard(_ group: [PrescribedSet]) -> some View {
         let first = group[0]
-        let hint = hints[first.exerciseId]
+        let hint = hints[first.liftKey]
         return GymCard(padding: 20) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
@@ -457,7 +459,9 @@ struct TodayView: View {
                     }
                     Spacer()
                     Button {
-                        guideTarget = GuideTarget(name: first.exerciseName, idKey: first.exerciseId)
+                        guideTarget = GuideTarget(name: first.exerciseName,
+                                                  exerciseId: ExerciseLibrary.baseId(ofVariant: first.liftKey),
+                                                  variantId: first.liftKey)
                     } label: {
                         Text("i")
                             .font(.system(size: 13, weight: .bold))
@@ -564,7 +568,7 @@ struct TodayView: View {
     }
 
     private func workingKg(cycle: TrainingCycle, ex: ScheduleExercise) -> Double? {
-        cycle.state.workingKg[ex.id] ?? ex.seedKg
+        cycle.state.workingKg[ex.stateKey] ?? ex.seedKg
     }
 
     private func repRange(_ group: [PrescribedSet]) -> String {
@@ -590,15 +594,6 @@ struct TodayView: View {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
-    private func mappedOneRM(name: String) -> Double? {
-        let n = name
-        if n.contains("벤치") { return profile.bench1RM }
-        if n.contains("스쿼트") { return profile.squat1RM }
-        if n.contains("데드") { return profile.dead1RM }
-        if n.contains("오버헤드") || n.contains("OHP") { return profile.ohp1RM }
-        return nil
-    }
-
     private func label(_ row: PrescribedSet, displayIndex: Int) -> String {
         if row.isWarmup { return "WU" }
         if row.isBBB { return "BBB" }
@@ -616,9 +611,9 @@ struct TodayView: View {
 
     private func loadHints(_ rows: [PrescribedSet]) {
         var map: [String: (kg: Double, reps: Int)] = [:]
-        for row in rows where map[row.exerciseId] == nil {
-            if let hint = SessionService.lastHint(context: context, exerciseId: row.exerciseId, exerciseName: row.exerciseName) {
-                map[row.exerciseId] = hint
+        for row in rows where map[row.liftKey] == nil {
+            if let hint = SessionService.lastHint(context: context, liftKey: row.liftKey) {
+                map[row.liftKey] = hint
             }
         }
         hints = map

@@ -10,6 +10,8 @@ struct HealthApp: App {
 
     init() {
         Gym.applyChrome()
+        // The exercise library loads once, here, before any view touches it.
+        _ = ExerciseLibrary.shared
         do {
             container = try StoreBootstrap.makeContainer(isDemo: Self.isDemo).0
         } catch {

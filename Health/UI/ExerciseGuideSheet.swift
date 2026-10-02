@@ -2,21 +2,18 @@ import SwiftUI
 import UIKit
 
 struct ExerciseGuideSheet: View {
-    var name: String
-    var id: String = ""
+    var exerciseId: String
+    var variantId: String
+    /// Stored slot name; shown when the library has no name for the variant (user variants).
+    var name: String = ""
     var last: (kg: Double, reps: Int)? = nil
     var prKg: Double? = nil
     var e1rm: Double? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        let g = ExerciseGuide.lookup(name: name, id: id)
-        let chips = g.muscle
-            .replacingOccurrences(of: "(", with: "·")
-            .replacingOccurrences(of: ")", with: "")
-            .split(separator: "·")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
+        let g = GuideContent.make(exerciseId: exerciseId, variantId: variantId, fallbackName: name)
+        let chips = g.chips
         VStack(spacing: 0) {
             Capsule()
                 .fill(Color(hex: 0x3A3A45).opacity(ThemeStore.shared.isDark ? 1 : 0.25))
@@ -57,7 +54,7 @@ struct ExerciseGuideSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if let imageName = g.imageName, UIImage(named: imageName) != nil {
+                    if let imageName = g.detail?.imageName, UIImage(named: imageName) != nil {
                         Image(imageName)
                             .resizable()
                             .scaledToFit()
@@ -76,8 +73,10 @@ struct ExerciseGuideSheet: View {
                         stat("1RM", e1rm.map { "\($0.gymKg)" } ?? "—", unit: e1rm == nil ? nil : "kg")
                     }
 
-                    section("이렇게", items: g.steps)
-                    section("이건 피하기", items: g.avoid)
+                    if let detail = g.detail {
+                        section("이렇게", items: detail.steps)
+                        section("이건 피하기", items: detail.avoid)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 18)

@@ -17,8 +17,8 @@ struct ExerciseEditorView: View {
             }
         }
         .sheet(isPresented: $showPicker) {
-            ExercisePickerSheet { name in
-                exercises.append(.makeCustom(name: name))
+            ExercisePickerSheet { picked in
+                exercises.append(picked)
             }
         }
         .presentationBackground(Gym.bg)
@@ -150,7 +150,10 @@ struct ExerciseEditorView: View {
             set: { name in
                 guard exercises.indices.contains(index) else { return }
                 exercises[index].name = name
-                exercises[index].plane = ExerciseGuide.defaultPlane(for: name)
+                // Library exercises carry their own plane; only free-text `other` variants are guessed from the name.
+                if exercises[index].exerciseId == ExerciseLibrary.otherId {
+                    exercises[index].plane = PlaneGuess.guess(name)
+                }
             }
         )
     }
@@ -163,20 +166,25 @@ struct ExerciseEditorView: View {
 }
 
 struct ExercisePickerSheet: View {
-    var onPick: (String) -> Void
+    var onPick: (ScheduleExercise) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
-    @State private var group = "전체"
-    @State private var selected: [String] = []
+    @State private var group: MuscleGroup?
+    @State private var selected: [ScheduleExercise] = []
 
-    private var filtered: [String] {
-        let all = ExerciseGuide.catalogTitles
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return all.filter { title in
-            let groupOK = group == "전체" || ExerciseGuide.group(for: title) == group
-            let queryOK = q.isEmpty || title.localizedCaseInsensitiveContains(q)
-            return groupOK && queryOK
-        }
+    private var library: ExerciseLibrary { ExerciseLibrary.shared }
+
+    private var filtered: [LibraryExercise] {
+        library.search(query, group: group).map(\.exercise)
+    }
+
+    private var trimmedQuery: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var hasExactMatch: Bool {
+        let q = SearchNormalizer.normalize(trimmedQuery)
+        return library.exercises.contains { SearchNormalizer.normalize($0.name) == q }
     }
 
     var body: some View {
@@ -205,10 +213,9 @@ struct ExercisePickerSheet: View {
                 TextField("운동 이름 검색 · 없으면 직접 추가", text: $query)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Gym.text)
-                if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                   !ExerciseGuide.catalogTitles.contains(where: { $0 == query.trimmingCharacters(in: .whitespacesAndNewlines) }) {
+                if !trimmedQuery.isEmpty, !hasExactMatch {
                     Button("추가") {
-                        toggle(query.trimmingCharacters(in: .whitespacesAndNewlines))
+                        addFreeText(trimmedQuery)
                         query = ""
                     }
                     .font(.system(size: 13, weight: .bold))
@@ -223,11 +230,11 @@ struct ExercisePickerSheet: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(ExerciseGuide.filterGroups, id: \.self) { item in
+                    ForEach([MuscleGroup?.none] + MuscleGroup.allCases.map(Optional.some), id: \.self) { item in
                         Button {
                             group = item
                         } label: {
-                            Text(item)
+                            Text(item?.label ?? "전체")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(group == item ? Gym.bg : Gym.muted)
                                 .padding(.horizontal, 14)
@@ -243,16 +250,16 @@ struct ExercisePickerSheet: View {
             }
 
             ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(filtered, id: \.self) { title in
-                        let on = selected.contains(title)
-                        Button { toggle(title) } label: {
+                LazyVStack(spacing: 0) {
+                    ForEach(filtered) { exercise in
+                        let on = selected.contains { $0.variantId == exercise.id }
+                        Button { toggle(exercise) } label: {
                             HStack(spacing: 14) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(title)
+                                    Text(exercise.name)
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundStyle(Gym.text)
-                                    Text(ExerciseGuide.lookup(name: title).muscle)
+                                    Text("\(exercise.group.label) · \(exercise.equipment.label)")
                                         .font(.system(size: 13))
                                         .foregroundStyle(Gym.faint)
                                 }
@@ -282,11 +289,22 @@ struct ExercisePickerSheet: View {
         .background(Gym.bg)
     }
 
-    private func toggle(_ name: String) {
-        if let i = selected.firstIndex(of: name) {
+    /// Library exercises are added as their generic variant.
+    private func toggle(_ exercise: LibraryExercise) {
+        if let i = selected.firstIndex(where: { $0.variantId == exercise.id }) {
             selected.remove(at: i)
         } else {
-            selected.append(name)
+            selected.append(.makeCustom(exerciseId: exercise.id))
         }
+    }
+
+    /// Free text becomes a user variant of `other`, never a new library exercise.
+    private func addFreeText(_ name: String) {
+        selected.append(.makeCustom(
+            exerciseId: ExerciseLibrary.otherId,
+            variantId: "\(ExerciseLibrary.otherId)/u-\(UUID().uuidString)",
+            name: name,
+            plane: PlaneGuess.guess(name)
+        ))
     }
 }

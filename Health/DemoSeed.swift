@@ -35,19 +35,19 @@ enum DemoSeed {
         var custom = ProgramSchedule.makeCustom(name: "집 헬스 3일")
         custom.days = [
             ProgramDay(id: "h1", name: "밀기", isRest: false, exercises: [
-                .makeCustom(name: "벤치프레스", sets: 4, reps: 8, seedKg: 60),
-                .makeCustom(name: "사이드 레터럴", sets: 3, reps: 15, seedKg: 8),
-                .makeCustom(name: "트라이셉스 푸시다운", sets: 3, reps: 12, seedKg: 20)
+                .makeCustom(exerciseId: "bench", sets: 4, reps: 8, seedKg: 60),
+                .makeCustom(exerciseId: "db-lateral-raise", sets: 3, reps: 15, seedKg: 8),
+                .makeCustom(exerciseId: "cable-pushdown", sets: 3, reps: 12, seedKg: 20)
             ]),
             ProgramDay(id: "h2", name: "당기기", isRest: false, exercises: [
-                .makeCustom(name: "바벨로우", sets: 4, reps: 8, seedKg: 50),
-                .makeCustom(name: "랫풀다운", sets: 3, reps: 10, seedKg: 45),
-                .makeCustom(name: "해머컬", sets: 3, reps: 12, seedKg: 12)
+                .makeCustom(exerciseId: "bent-over-row", sets: 4, reps: 8, seedKg: 50),
+                .makeCustom(exerciseId: "cable-lat-pulldown", sets: 3, reps: 10, seedKg: 45),
+                .makeCustom(exerciseId: "db-hammer-curl", sets: 3, reps: 12, seedKg: 12)
             ]),
             ProgramDay(id: "h3", name: "하체", isRest: false, exercises: [
-                .makeCustom(name: "스쿼트", sets: 4, reps: 6, seedKg: 90),
-                .makeCustom(name: "RDL", sets: 3, reps: 10, seedKg: 70),
-                .makeCustom(name: "카프 레이즈", sets: 4, reps: 15, seedKg: 40)
+                .makeCustom(exerciseId: "squat", sets: 4, reps: 6, seedKg: 90),
+                .makeCustom(exerciseId: "romanian-deadlift", sets: 3, reps: 10, seedKg: 70),
+                .makeCustom(exerciseId: "machine-standing-calf-raise", sets: 4, reps: 15, seedKg: 40)
             ])
         ]
         _ = SessionService.persistCustom(context: context, existing: nil, schedule: custom, cycle: nil)

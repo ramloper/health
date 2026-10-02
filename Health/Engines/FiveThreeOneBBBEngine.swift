@@ -21,11 +21,12 @@ struct FiveThreeOneBBBEngine: ProgressionEngine {
         let work = weekWork[week] ?? weekWork[1]!
         let main = day.exercises.first
         let name = main?.name ?? day.name
+        let liftKey = main?.variantId ?? lift
         var rows: [PrescribedSet] = []
         var idx = 0
         for (pct, reps) in warmup {
             rows.append(PrescribedSet(
-                exerciseId: lift, exerciseName: name, setIndex: idx,
+                exerciseId: lift, exerciseName: name, liftKey: liftKey, setIndex: idx,
                 kg: Kg.percent(tm, pct), reps: reps, repMax: reps,
                 isWorking: false, isWarmup: true, isAMRAP: false, isBBB: false, isOptional: false
             ))
@@ -34,7 +35,7 @@ struct FiveThreeOneBBBEngine: ProgressionEngine {
         for (i, pair) in work.enumerated() {
             let amrap = week <= 3 && i == work.count - 1
             rows.append(PrescribedSet(
-                exerciseId: lift, exerciseName: name, setIndex: idx,
+                exerciseId: lift, exerciseName: name, liftKey: liftKey, setIndex: idx,
                 kg: Kg.percent(tm, pair.0), reps: pair.1, repMax: pair.1,
                 isWorking: true, isWarmup: false, isAMRAP: amrap, isBBB: false, isOptional: false
             ))
@@ -44,7 +45,7 @@ struct FiveThreeOneBBBEngine: ProgressionEngine {
             let bbbKg = Kg.percent(tm, 0.50)
             for b in 0..<5 {
                 rows.append(PrescribedSet(
-                    exerciseId: lift, exerciseName: "BBB \(name)", setIndex: idx + b,
+                    exerciseId: lift, exerciseName: "BBB \(name)", liftKey: liftKey, setIndex: idx + b,
                     kg: bbbKg, reps: 10, repMax: 10,
                     isWorking: true, isWarmup: false, isAMRAP: false, isBBB: true, isOptional: false
                 ))

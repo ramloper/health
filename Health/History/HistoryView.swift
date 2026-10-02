@@ -6,6 +6,7 @@ struct HistoryView: View {
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
     @Query(sort: \PersonalRecord.kg, order: .reverse) private var prs: [PersonalRecord]
     @Query(sort: \CustomRoutine.updatedAt, order: .reverse) private var customs: [CustomRoutine]
+    @Query private var userVariants: [UserVariant]
     @ObservedObject private var theme = ThemeStore.shared
     @State private var selectedSession: WorkoutSession?
     @State private var pendingDeleteSession: WorkoutSession?
@@ -160,15 +161,13 @@ struct HistoryView: View {
         }
     }
 
-    /// PRs are keyed by guide title now; the first four cover records written by older builds.
+    /// PRs are keyed by variant id. Library variants resolve by id, user variants by nickname.
+    /// Grouping by base exercise comes later; `other` records fall back to "기타".
     private func displayName(_ id: String) -> String {
-        switch id {
-        case "bench": return "벤치프레스"
-        case "squat": return "스쿼트"
-        case "deadlift", "dead": return "데드리프트"
-        case "ohp", "press": return "오버헤드 프레스 (OHP)"
-        default: return id.isEmpty ? "운동" : id
-        }
+        if let name = ExerciseLibrary.shared.displayName(variantId: id) { return name }
+        if let nickname = userVariants.first(where: { $0.id == id })?.nickname { return nickname }
+        if ExerciseLibrary.baseId(ofVariant: id) == ExerciseLibrary.otherId { return "기타" }
+        return id.isEmpty ? "운동" : id
     }
 
     private func schedule(for session: WorkoutSession) -> ProgramSchedule? {

@@ -2,7 +2,7 @@ import XCTest
 @testable import Health
 
 /// Golden progression fixture captured from main's engines before the exercise-library key migration.
-/// Record: `./scripts/record-golden.sh` (or `./scripts/record-golden.sh force` to overwrite).
+/// The fixture is frozen: it is keyed by 1.0 slot id, and the match test maps each slot id to its stateKey.
 final class GoldenProgressionTests: XCTestCase {
     static let sessionCount = 40
     static let programIds = [
@@ -88,33 +88,6 @@ final class GoldenProgressionTests: XCTestCase {
         return GoldenProgram(id: programId, sessions: sessions)
     }
 
-    static func simulateAll(sourceCommit: String) throws -> GoldenFile {
-        GoldenFile(
-            sourceCommit: sourceCommit,
-            sessions: sessionCount,
-            programs: try programIds.map { try simulate(programId: $0) }
-        )
-    }
-
-    func testRecordGolden() throws {
-        let env = ProcessInfo.processInfo.environment
-        guard let mode = env["RECORD_GOLDEN"], !mode.isEmpty else {
-            throw XCTSkip("RECORD_GOLDEN not set; run ./scripts/record-golden.sh")
-        }
-        let url = Self.fixtureURL
-        if FileManager.default.fileExists(atPath: url.path), mode != "force" {
-            XCTFail("fixture exists; use RECORD_GOLDEN=force")
-            return
-        }
-        let golden = try Self.simulateAll(sourceCommit: env["GOLDEN_COMMIT"] ?? "unknown")
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        var data = try encoder.encode(golden)
-        data.append(0x0A)
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try data.write(to: url, options: .atomic)
-    }
-
     func testProgressionMatchesGolden() throws {
         let url = Self.fixtureURL
         guard let data = try? Data(contentsOf: url) else {
@@ -125,6 +98,15 @@ final class GoldenProgressionTests: XCTestCase {
         XCTAssertEqual(golden.programs.map(\.id), Self.programIds)
         for expected in golden.programs {
             let actual = try Self.simulate(programId: expected.id)
+            // 1.0 keyed progression by slot id; 1.1 keys it by stateKey. Same numbers, renamed keys.
+            var stateKeyBySlot: [String: String] = [:]
+            for slot in try CatalogTests.schedule(expected.id).days.flatMap(\.exercises) where stateKeyBySlot[slot.id] == nil {
+                stateKeyBySlot[slot.id] = slot.stateKey
+            }
+            XCTAssertEqual(Set(stateKeyBySlot.values).count, stateKeyBySlot.count, "\(expected.id): two slots share a stateKey")
+            func rekey<V>(_ dict: [String: V]) -> [String: V] {
+                Dictionary(dict.map { (stateKeyBySlot[$0.key] ?? $0.key, $0.value) }, uniquingKeysWith: { first, _ in first })
+            }
             XCTAssertEqual(actual.sessions.count, expected.sessions.count, "\(expected.id): session count")
             for (e, a) in zip(expected.sessions, actual.sessions) {
                 let at = "\(expected.id) session \(e.index)"
@@ -135,8 +117,8 @@ final class GoldenProgressionTests: XCTestCase {
                 XCTAssertEqual(a.weekIndex, e.weekIndex, "\(at): weekIndex")
                 XCTAssertEqual(a.trainingSessionsCompleted, e.trainingSessionsCompleted, "\(at): trainingSessionsCompleted")
                 XCTAssertEqual(a.deloadSessionsRemaining, e.deloadSessionsRemaining, "\(at): deloadSessionsRemaining")
-                assertDictionary(a.workingKg, e.workingKg, "\(at): workingKg")
-                assertDictionary(a.stall, e.stall, "\(at): stall")
+                assertDictionary(a.workingKg, rekey(e.workingKg), "\(at): workingKg")
+                assertDictionary(a.stall, rekey(e.stall), "\(at): stall")
                 assertDictionary(a.tm, e.tm, "\(at): tm")
                 assertDictionary(a.pendingTmBump, e.pendingTmBump, "\(at): pendingTmBump")
             }
