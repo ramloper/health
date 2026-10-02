@@ -1,5 +1,5 @@
 #!/bin/bash
-# App Store 스크린샷 생성. 결과: build/screenshots/*.png (6.9" = iPhone 17 Pro Max, 1320x2868)
+# App Store 스크린샷 생성. 결과: build/screenshots/*.png (6.9" = iPhone 17 Pro Max, 1320x2868), 8장 (01-today ~ 08-shop)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

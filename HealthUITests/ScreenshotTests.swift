@@ -9,6 +9,7 @@ final class ScreenshotTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["--demo"]
+        app.useShopFeed(preferDocs: true)
         app.launch()
     }
 
@@ -20,7 +21,7 @@ final class ScreenshotTests: XCTestCase {
         let start = app.buttons["start-workout"]
         XCTAssertTrue(start.waitForExistence(timeout: 20))
         sleep(1)
-        snap("01-today")
+        snap("01-today", app: app)
 
         // 2. Exercise guide
         let guideCue = app.staticTexts["이렇게"]
@@ -32,7 +33,7 @@ final class ScreenshotTests: XCTestCase {
         }
         XCTAssertTrue(guideCue.waitForExistence(timeout: 5))
         sleep(1)
-        snap("02-guide")
+        snap("02-guide", app: app)
         app.buttons["guide-close"].tap()
         XCTAssertTrue(start.waitForExistence(timeout: 5))
 
@@ -43,32 +44,39 @@ final class ScreenshotTests: XCTestCase {
         let skip = app.buttons["휴식 건너뛰기"]
         XCTAssertTrue(tick.firstMatch.waitForExistence(timeout: 5))
         sleep(1)
-        tapUntil(tick.firstMatch) { done.count >= 1 }
+        tapUntil(tick.firstMatch, app: app) { done.count >= 1 }
         XCTAssertTrue(skip.waitForExistence(timeout: 3))
         skip.tap()
         sleep(1)
-        tapUntil(tick.firstMatch) { done.count >= 2 }
+        tapUntil(tick.firstMatch, app: app) { done.count >= 2 }
         XCTAssertTrue(skip.waitForExistence(timeout: 3))
         sleep(1)
-        snap("03-rest")
+        snap("03-rest", app: app)
         skip.tap()
         sleep(1)
-        snap("04-session")
+        snap("04-session", app: app)
 
         // 4. Routines
         tabs.buttons["루틴"].tap()
         XCTAssertTrue(app.staticTexts["프로그램"].waitForExistence(timeout: 5))
-        snap("05-routines")
+        snap("05-routines", app: app)
 
         // 5. History
         tabs.buttons["기록"].tap()
         XCTAssertTrue(app.staticTexts["PR"].waitForExistence(timeout: 5))
-        snap("06-history")
+        snap("06-history", app: app)
 
         // 6. Profile
         tabs.buttons["프로필"].tap()
         XCTAssertTrue(app.staticTexts["1RM"].waitForExistence(timeout: 5))
-        snap("07-profile")
+        snap("07-profile", app: app)
+
+        // 7. Shop
+        tabs.buttons["쇼핑"].tap()
+        let firstCard = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'shop-card-'")).firstMatch
+        XCTAssertTrue(firstCard.waitForExistence(timeout: 10))
+        sleep(1)
+        snap("08-shop", app: app)
     }
 
     func testFiveThreeOneCompletesMainAndBBBSets() {
@@ -114,30 +122,5 @@ final class ScreenshotTests: XCTestCase {
 
         tabs.buttons["기록"].tap()
         XCTAssertTrue(app.staticTexts["11세트 완료"].waitForExistence(timeout: 5))
-    }
-
-    /// Plain-style SwiftUI buttons sometimes ignore the first synthesized tap; retry by coordinate.
-    private func tapUntil(_ element: XCUIElement, attempts: Int = 3, _ condition: () -> Bool) {
-        for i in 0..<attempts {
-            if i == 0 { element.tap() } else { element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
-            let deadline = Date().addingTimeInterval(2)
-            while Date() < deadline {
-                if condition() { return }
-                usleep(200_000)
-            }
-        }
-        let dump = XCTAttachment(string: app.debugDescription)
-        dump.name = "hierarchy-at-failure"
-        dump.lifetime = .keepAlways
-        add(dump)
-        snap("99-failure")
-        XCTFail("tap did not take effect: \(element)")
-    }
-
-    private func snap(_ name: String) {
-        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        attachment.name = name
-        attachment.lifetime = .keepAlways
-        add(attachment)
     }
 }
