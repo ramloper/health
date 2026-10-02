@@ -6,7 +6,7 @@
 - [x] 아이폰 전용, 세로 모드, iOS 17 이상
 - [x] PrivacyInfo.xcprivacy (UserDefaults 사유 CA92.1)
 - [x] 암호화 미사용 선언 (ITSAppUsesNonExemptEncryption = NO)
-- [x] 유닛 테스트 42개, 스크린샷·5/3/1 세션 완료 UI 테스트
+- [x] 유닛 테스트 76개, 스크린샷·5/3/1 세션 완료·쇼핑 탭 UI 테스트
 - [x] 스토어 문구: docs/app-store-metadata.md
 - [x] 개인정보 처리방침, 지원 페이지: docs/privacy-policy.md, docs/support.md
 
@@ -16,7 +16,10 @@ App Store는 개인정보 처리방침 URL과 지원 URL을 요구합니다. 가
 
 1. GitHub에 이 저장소(또는 `docs/`만 담은 공개 저장소)를 올린다.
 2. Settings → Pages → Source: `main` 브랜치 `/docs` 폴더로 켠다.
-3. 주소가 `https://<계정>.github.io/<저장소>/privacy-policy` 와 `/support` 로 생긴다.
+   - 무료 플랜에서는 저장소 `ramloper/health`가 public이어야 Pages를 켤 수 있다.
+   - `.nojekyll`은 추가하지 않는다.
+   - 상품 이미지를 교체할 때는 같은 파일명으로 덮어쓰지 말고 새 파일명을 쓴다(기기 캐시가 영구 보존됨).
+3. 주소가 `https://ramloper.github.io/health/privacy-policy` 와 `/support` 로 생긴다. (2026-10-02 활성화 완료, 둘 다 200 확인)
 4. 그 두 주소를 App Store Connect에 입력한다.
 
 Notion 공개 페이지나 어떤 정적 호스팅이든 상관없습니다. 내용은 docs 파일 그대로 붙이면 됩니다.
@@ -50,7 +53,7 @@ Notion 공개 페이지나 어떤 정적 호스팅이든 상관없습니다. 내
 
 App Store Connect → 앱 → iOS 앱 → 1.0 준비 중
 
-- 스크린샷: 6.9" 탭에 `build/screenshots/*.png` 7장 (순서는 metadata 문서 참고)
+- 스크린샷: 6.9" 탭에 `build/screenshots/*.png` 8장 (순서는 metadata 문서 참고)
 - 홍보 문구, 설명, 키워드, 지원 URL: docs/app-store-metadata.md 복사
 - 빌드: TestFlight에 올라온 빌드 선택
 - 앱 심사 정보: 연락처 이름/전화/이메일, 메모는 metadata 문서의 "심사 메모"
@@ -65,6 +68,15 @@ App Store Connect → 앱 → iOS 앱 → 1.0 준비 중
 - [ ] 앱 강제 종료 후 재실행 시 진행 중 세션이 복원되는지
 - [ ] 프로필 → 기록 내보내기가 공유 시트를 띄우는지
 - [ ] 라이트 모드 전환 후 모든 탭 한 번씩
+- [ ] 쇼핑 탭 로딩 → 칩 전환 → 상품 탭 → 사파리로 열림 → 비행기 모드에서 캐시 표시
+- [ ] 시스템 글자 크기 최대(Dynamic Type)에서 쇼핑 카드 잘림 없음
+
+## 5-1. 쇼핑 탭 제출 차단 항목
+
+- [ ] `curl -s -o /dev/null -w '%{http_code}' https://ramloper.github.io/health/shop.json` 결과가 200
+- [ ] docs/shop.json의 coupangURL이 전부 실제 파트너스 링크인지 확인
+- [ ] 실제 상품으로 `./scripts/screenshots.sh` 재실행해 08-shop 갱신
+- [ ] metadata의 "제3자 콘텐츠"·"로그인도 서버도 없이" 문구 결정
 
 ## 6. 다음 버전
 

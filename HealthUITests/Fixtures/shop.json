@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-02",
+  "categories": [
+    { "id": "gear", "name": "장비" },
+    { "id": "supplement", "name": "보충제" },
+    { "id": "apparel", "name": "의류" }
+  ],
+  "products": [
+    {
+      "id": "strap-001",
+      "categoryId": "gear",
+      "name": "리프팅 스트랩",
+      "summary": "데드리프트 그립 보조",
+      "price": "12,900원",
+      "imageURL": "https://ramloper.github.io/health/shop/images/strap-001.jpg",
+      "coupangURL": "https://example.com/shop/strap-001"
+    },
+    {
+      "id": "belt-001",
+      "categoryId": "gear",
+      "name": "가죽 리프팅 벨트",
+      "summary": "스쿼트·데드 코어 지지",
+      "price": "49,000원",
+      "imageURL": "https://ramloper.github.io/health/shop/images/belt-001.jpg",
+      "coupangURL": "https://example.com/shop/belt-001"
+    },
+    {
+      "id": "chalk-001",
+      "categoryId": "gear",
+      "name": "액상 초크",
+      "summary": "손 미끄럼 방지",
+      "imageURL": "https://ramloper.github.io/health/shop/images/chalk-001.jpg",
+      "coupangURL": "https://example.com/shop/chalk-001"
+    },
+    {
+      "id": "whey-001",
+      "categoryId": "supplement",
+      "name": "유청 단백질 1kg",
+      "summary": "운동 후 단백질 보충",
+      "price": "32,000원",
+      "imageURL": "https://ramloper.github.io/health/shop/images/whey-001.jpg",
+      "coupangURL": "https://example.com/shop/whey-001"
+    }
+  ]
+}

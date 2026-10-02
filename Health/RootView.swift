@@ -53,6 +53,9 @@ struct MainTabs: View {
                     Tab("프로필", systemImage: "person.fill", value: 3) {
                         ProfileView(profile: profile, cycle: cycle)
                     }
+                    Tab("쇼핑", systemImage: "bag.fill", value: 4) {
+                        ShopView()
+                    }
                 }
             } else {
                 TabView(selection: $selectedTab) {
@@ -69,6 +72,9 @@ struct MainTabs: View {
                     ProfileView(profile: profile, cycle: cycle)
                         .tabItem { Label("프로필", systemImage: "person.fill") }
                         .tag(3)
+                    ShopView()
+                        .tabItem { Label("쇼핑", systemImage: "bag.fill") }
+                        .tag(4)
                 }
             }
         }
