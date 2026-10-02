@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-02",
+  "categories": [
+    {
+      "id": "protein",
+      "name": "단백질"
+    },
+    {
+      "id": "booster",
+      "name": "부스터"
+    },
+    {
+      "id": "amino",
+      "name": "아미노산"
+    },
+    {
+      "id": "vitamin",
+      "name": "영양제"
+    },
+    {
+      "id": "gear",
+      "name": "용품"
+    },
+    {
+      "id": "drink",
+      "name": "음료"
+    }
+  ],
+  "products": [
+    {
+      "id": "sd500-wpi-2kg",
+      "categoryId": "protein",
+      "name": "삼대오백 매시브 WPI 웨이 프로틴",
+      "summary": "WPI 단백질 보충제 2kg",
+      "imageURL": "https://t1c.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/image_audit/prod/3b03dd56-0f1a-4308-9e20-82d0be11f20b_fixing_v2.png",
+      "coupangURL": "https://link.coupang.com/a/hv8rqYYOs0"
+    },
+    {
+      "id": "sd500-wpc-choco-2kg",
+      "categoryId": "protein",
+      "name": "삼대오백 WPC 웨이 프로틴 초코",
+      "summary": "WPC 단백질 보충제 초코맛 2kg",
+      "imageURL": "https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/9268/aae4d94f0ca339186a8581ea34e7a20ff3de768dec8da0f68130fa49249e.png",
+      "coupangURL": "https://link.coupang.com/a/hv8sBykxfE"
+    },
+    {
+      "id": "sd500-creatine-300g",
+      "categoryId": "booster",
+      "name": "삼대오백 크레아틴 모노 하이드레이트",
+      "summary": "크레아틴 파우더 300g",
+      "imageURL": "https://thumbnail4.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/1848114720456067-49342d6d-0394-43b0-84a9-d5f40f39b475.png",
+      "coupangURL": "https://link.coupang.com/a/hv8rYlpNi8"
+    },
+    {
+      "id": "sd500-preworkout-70g",
+      "categoryId": "booster",
+      "name": "삼대오백 헬스부스터 프리워크아웃",
+      "summary": "운동 전 부스터 스틱 15개",
+      "imageURL": "https://thumbnail9.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/222555075899886-5cf3ca84-6f05-4d05-80ad-ca4ec777e754.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8sh21tMO"
+    },
+    {
+      "id": "sd500-worldclass-grape-700g",
+      "categoryId": "booster",
+      "name": "삼대오백 프리워크아웃 월드클래스 포도",
+      "summary": "운동 전 부스터 포도맛 700g",
+      "imageURL": "https://thumbnail3.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/114950370437165-d23942de-483e-4921-ba0b-fd1228ed6cb3.png",
+      "coupangURL": "https://link.coupang.com/a/hv8sDPAUFM"
+    },
+    {
+      "id": "sd500-glypump",
+      "categoryId": "booster",
+      "name": "삼대오백 글리펌프",
+      "summary": "펌핑 보충제 15포, 2개",
+      "imageURL": "https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2023/11/20/11/3/84f9ada2-1b58-4d7c-8687-cbdd1a0f2a4f.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8sjEUVoq"
+    },
+    {
+      "id": "sd500-arginine-6300",
+      "categoryId": "booster",
+      "name": "삼대오백 아르기닌 6300",
+      "summary": "아르기닌 15포 330g",
+      "imageURL": "https://thumbnail13.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/9321/1f8b48014329eebf1b9e0ce8fdbbcb8db20916d1403d272edde7e73424db.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8sf1m2we"
+    },
+    {
+      "id": "sd500-eaa-maesil",
+      "categoryId": "amino",
+      "name": "삼대오백 EAA 매실맛",
+      "summary": "필수아미노산 파우더 300g",
+      "imageURL": "https://t4c.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/162722420419610-41881c87-f6f8-4eda-a5b1-010406d1012b.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8sdwgPXU"
+    },
+    {
+      "id": "sd500-bcaa-peach",
+      "categoryId": "amino",
+      "name": "삼대오백 BCAA 프로 피치",
+      "summary": "BCAA 파우더 복숭아맛 500g",
+      "imageURL": "https://t3c.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/221947982214864-50c4c06b-8fe6-4ea3-a9b6-d12acd15375a.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8sztlqFg"
+    },
+    {
+      "id": "sd500-glutamine-300g",
+      "categoryId": "amino",
+      "name": "삼대오백 L글루타민",
+      "summary": "글루타민 파우더 300g",
+      "imageURL": "https://thumbnail15.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/5554521029146-07cba11c-1cc0-4607-8781-e0e2969aae61.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8ssJC6Jo"
+    },
+    {
+      "id": "sd500-multivitamin",
+      "categoryId": "vitamin",
+      "name": "삼대오백 올인원 멀티비타민",
+      "summary": "멀티비타민 100정",
+      "imageURL": "https://thumbnail2.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2026/02/03/14/6/c1a5b387-ee5f-4997-aeb7-a697c45b0c6f.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8sldJuVw"
+    },
+    {
+      "id": "sd500-omega3",
+      "categoryId": "vitamin",
+      "name": "삼대오백 알티지 오메가3",
+      "summary": "rTG 오메가3 30정",
+      "imageURL": "https://t5c.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2023/05/30/17/1/1a864c78-8a05-4d02-b9d2-fb93c71af99b.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8svpzeh2"
+    },
+    {
+      "id": "sd500-shaker",
+      "categoryId": "gear",
+      "name": "삼대오백 프리미엄 쉐이커",
+      "summary": "단백질 쉐이커 보틀",
+      "imageURL": "https://thumbnail7.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/151165475350171-11221452-4324-4fa1-9b9e-b1a2b0a10f87.jpg",
+      "coupangURL": "https://link.coupang.com/a/hv8r9tsEvY"
+    },
+    {
+      "id": "sd500-viper-pump-zero",
+      "categoryId": "drink",
+      "name": "삼대오백 바이퍼 펌프 레드 ZERO",
+      "summary": "제로 탄산음료 355ml 24개",
+      "imageURL": "https://t3c.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/7213/66892d4e8ce00863e51c8582bd85cd2b96c041ab57bb0911c3ec1ba46d07.png",
+      "coupangURL": "https://link.coupang.com/a/hv8snfsrm0"
+    }
+  ]
+}
