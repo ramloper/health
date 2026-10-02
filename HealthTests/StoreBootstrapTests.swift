@@ -79,6 +79,18 @@ final class StoreBootstrapTests: XCTestCase {
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<AthleteProfile>()), 1)
     }
 
+    /// L5: only corruption-like errors move the store aside; transient ones (disk full, permission) are retried in place.
+    func testTransientErrorIsNotTreatedAsCorruption() {
+        XCTAssertFalse(StoreBootstrap.isCorruption(NSError(domain: NSPOSIXErrorDomain, code: Int(ENOSPC))))
+        XCTAssertFalse(StoreBootstrap.isCorruption(NSError(domain: NSCocoaErrorDomain, code: NSFileWriteNoPermissionError)))
+        XCTAssertTrue(StoreBootstrap.isCorruption(NSError(domain: NSCocoaErrorDomain, code: 259)))
+        XCTAssertTrue(StoreBootstrap.isCorruption(NSError(domain: "NSSQLiteErrorDomain", code: 26)))
+        XCTAssertTrue(StoreBootstrap.isCorruption(SwiftDataError.loadIssueModelContainer))
+        let wrapped = NSError(domain: "Outer", code: 1,
+                              userInfo: [NSUnderlyingErrorKey: NSError(domain: NSCocoaErrorDomain, code: 134110)])
+        XCTAssertTrue(StoreBootstrap.isCorruption(wrapped))
+    }
+
     func testHealthyV2StoreIsKept() throws {
         try autoreleasepool {
             let (container, result) = try bootstrap()

@@ -394,12 +394,16 @@ def validate(opts, data=None):
             c.err(f"slot {key}: label must be a non-empty string when present")
     program_slots = OrderedDict()
     names = set()
+    # "T2 벤치" / "라이트 슈러그": the label prefix is display-only, so search resolves the base name.
+    labeled_bases = {}
     for pid, p in programs.items():
         for d in p["days"]:
             for ex in d["exercises"]:
                 key = (pid, d["id"], ex["id"])
                 program_slots[key] = ex
                 names.add(ex["name"])
+                if ex.get("label") and ex["name"].startswith(ex["label"] + " "):
+                    labeled_bases[ex["name"]] = ex["name"][len(ex["label"]) + 1:]
                 s = sidecar.get(key)
                 if s is None:
                     c.err(f"program slot {key} ({ex['name']}) missing from program-slots.json")
@@ -413,7 +417,7 @@ def validate(opts, data=None):
     if len(names) != EXPECTED_NAMES:
         c.err(f"distinct program exercise names {len(names)} != {EXPECTED_NAMES}")
     for name in sorted(names):
-        if norm(name) not in term_owner:
+        if norm(name) not in term_owner and norm(labeled_bases.get(name, name)) not in term_owner:
             c.warn(f"program name {name!r} is not a name/alias of any exercise (search won't find it)")
 
     # tag rule + stateKey invariant

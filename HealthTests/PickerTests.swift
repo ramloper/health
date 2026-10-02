@@ -250,3 +250,163 @@ extension PickerTests {
         XCTAssertEqual(generic.displayName, "벤치프레스")
     }
 }
+
+// MARK: - Review fixes (H1, M1, M2, M4, L1)
+
+extension PickerTests {
+    private func routineSchedule(with slot: ScheduleExercise) -> ProgramSchedule {
+        var schedule = ProgramSchedule.makeCustom(name: "변형 루틴")
+        schedule.days[0].exercises = [slot]
+        return schedule
+    }
+
+    func testFreeTextReusesExistingOtherVariant() throws {
+        let context = try makeContext()
+        let first = try XCTUnwrap(UserVariantStore.addFreeText("케이블 X", context: context))
+        let second = try XCTUnwrap(UserVariantStore.addFreeText(" 케이블x ", context: context))
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<UserVariant>()), 1)
+        XCTAssertEqual(second.variantId, first.variantId)
+        XCTAssertNotEqual(second.id, first.id, "each pick is its own slot")
+
+        // A hidden variant is not reused; a new visible one is created.
+        let hidden = try XCTUnwrap(context.fetch(FetchDescriptor<UserVariant>()).first)
+        hidden.isHidden = true
+        try context.save()
+        let third = try XCTUnwrap(UserVariantStore.addFreeText("케이블 X", context: context))
+        XCTAssertNotEqual(third.variantId, first.variantId)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<UserVariant>()), 2)
+    }
+
+    func testUserVariantSearchMatchesNicknameAndBrand() {
+        let mine = userVariant(machine, nickname: "2층 파란 머신", brandId: "hammer")
+        let custom = userVariant(machine, nickname: "구석 머신", brandId: nil)
+        custom.brandName = "동네브랜드"
+        let other = userVariant(ExerciseLibrary.otherId, nickname: "스쿼트 머신", brandId: nil)
+        let hidden = userVariant(machine, nickname: "파란 숨김", hidden: true)
+        let all = [mine, custom, other, hidden]
+
+        XCTAssertEqual(UserVariantSearch.match(query: "파란", variants: all, library: library).map(\.id), [mine.id])
+        XCTAssertEqual(UserVariantSearch.match(query: "2층파란", variants: all, library: library).map(\.id), [mine.id])
+        XCTAssertEqual(UserVariantSearch.match(query: "동네 브랜드", variants: all, library: library).map(\.id), [custom.id])
+        XCTAssertEqual(UserVariantSearch.match(query: "해머", variants: all, library: library).map(\.id), [mine.id])
+        XCTAssertEqual(UserVariantSearch.match(query: "스쿼트머신", variants: all, library: library).map(\.id), [other.id])
+        XCTAssertEqual(Set(UserVariantSearch.match(query: "머신", variants: all, library: library).map(\.id)),
+                       [mine.id, custom.id, other.id])
+        XCTAssertTrue(UserVariantSearch.match(query: "  ", variants: all, library: library).isEmpty)
+        // The library search stays library-only.
+        XCTAssertFalse(library.search("2층 파란").contains { $0.exercise.id == machine })
+    }
+
+    func testUserVariantInScheduleIsHiddenNotDeleted() throws {
+        let context = try makeContext()
+        let inRoutine = try XCTUnwrap(UserVariantStore.insert(
+            UserVariantDraft(exerciseId: machine, brandId: "hammer", nickname: "루틴용"), context: context))
+        let inPending = try XCTUnwrap(UserVariantStore.insert(
+            UserVariantDraft(exerciseId: machine, brandId: "hammer", nickname: "대기용"), context: context))
+        let unused = try XCTUnwrap(UserVariantStore.insert(
+            UserVariantDraft(exerciseId: machine, brandId: "hammer", nickname: "안 씀"), context: context))
+
+        let routineSlot = ScheduleExercise.makeCustom(exerciseId: machine, variantId: inRoutine.id,
+                                                      name: inRoutine.displayName(in: library), plane: "upper")
+        let schedule = routineSchedule(with: routineSlot)
+        _ = SessionService.persistCustom(context: context, existing: nil, schedule: schedule, cycle: nil)
+        let cycle = SessionService.startCycle(context: context, schedule: schedule, profile: .documentDefaults)
+        cycle.pendingSchedule = routineSchedule(with: .makeCustom(exerciseId: machine, variantId: inPending.id,
+                                                                  name: "대기용", plane: "upper"))
+        try context.save()
+
+        XCTAssertFalse(UserVariantStore.canDelete(inRoutine.id, context: context))
+        XCTAssertFalse(UserVariantStore.canDelete(inPending.id, context: context))
+        XCTAssertTrue(UserVariantStore.canDelete(unused.id, context: context))
+
+        XCTAssertFalse(UserVariantStore.remove(inRoutine, context: context))
+        XCTAssertTrue(inRoutine.isHidden)
+        XCTAssertTrue(UserVariantStore.remove(unused, context: context))
+        XCTAssertEqual(Set(try context.fetch(FetchDescriptor<UserVariant>()).map(\.id)), [inRoutine.id, inPending.id])
+    }
+
+    func testRenamingUserVariantUpdatesSchedules() throws {
+        let context = try makeContext()
+        var draft = UserVariantDraft(exerciseId: machine, brandId: "hammer", nickname: "파란 머신")
+        let variant = try XCTUnwrap(UserVariantStore.insert(draft, context: context))
+        let slot = ScheduleExercise.makeCustom(exerciseId: machine, variantId: variant.id,
+                                               name: variant.displayName(in: library), plane: "upper")
+        var schedule = routineSchedule(with: slot)
+        schedule.days[0].exercises.append(.makeCustom(exerciseId: "bench"))
+        let routine = SessionService.persistCustom(context: context, existing: nil, schedule: schedule, cycle: nil)
+        let cycle = SessionService.startCycle(context: context, schedule: schedule, profile: .documentDefaults)
+        cycle.pendingSchedule = schedule
+        let draftBefore = cycle.draftJSON
+        try context.save()
+
+        draft.nickname = "빨간 머신"
+        UserVariantStore.update(variant, from: draft, context: context)
+
+        for stored in [routine.resolvedSchedule(), cycle.resolvedSchedule(), cycle.pendingSchedule] {
+            let exercises = try XCTUnwrap(stored).days[0].exercises
+            XCTAssertEqual(exercises[0].name, "해머스트렝스 빨간 머신")
+            XCTAssertEqual(exercises[0].displayName, "해머스트렝스 빨간 머신")
+            XCTAssertEqual(exercises[0].id, slot.id)
+            XCTAssertEqual(exercises[1].name, "벤치프레스", "other slots untouched")
+        }
+        XCTAssertEqual(cycle.draftJSON, draftBefore)
+    }
+
+    func testExportUsesNicknameForUserVariant() throws {
+        let context = try makeContext()
+        let variant = try XCTUnwrap(UserVariantStore.insert(
+            UserVariantDraft(exerciseId: machine, brandId: "hammer", nickname: "파란 머신"), context: context))
+        context.insert(PersonalRecord(liftId: variant.id, kg: 50))
+        context.insert(PersonalRecord(liftId: machine, kg: 40))
+        try context.save()
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let export = try decoder.decode(SessionService.ExportDocument.self, from: SessionService.exportJSON(context: context))
+        let lifts = Dictionary(uniqueKeysWithValues: export.personalRecords.map { ($0.liftId, $0.lift) })
+        XCTAssertEqual(lifts[variant.id], "파란 머신")
+        XCTAssertEqual(lifts[machine], library.displayName(variantId: machine))
+    }
+
+    func testHintsScopedByStateKey() throws {
+        let context = try makeContext()
+        var heavy = ScheduleExercise.makeCustom(exerciseId: "shrug", sets: 1, reps: 5)
+        heavy.progressionTag = "heavy"
+        var light = ScheduleExercise.makeCustom(exerciseId: "shrug", sets: 1, reps: 12)
+        light.progressionTag = "light"
+        light.label = "라이트"
+        let plain = ScheduleExercise.makeCustom(exerciseId: "bench", sets: 1, reps: 10)
+        var schedule = ProgramSchedule.makeCustom()
+        schedule.days = [ProgramDay(id: "a", name: "A", isRest: false, exercises: [heavy, plain]),
+                         ProgramDay(id: "b", name: "B", isRest: false, exercises: [light])]
+
+        func log(_ slot: ScheduleExercise, kg: Double, reps: Int, date: Date) {
+            context.insert(SetLog(exerciseId: slot.id, exerciseName: slot.displayName, setIndex: 0, kg: kg, reps: reps,
+                                  completed: true, isWorking: true, isAMRAP: false, isWarmup: false, isBBB: false,
+                                  liftKey: slot.liftKey, date: date))
+        }
+        log(heavy, kg: 100, reps: 5, date: Date(timeIntervalSince1970: 1_000))
+        log(light, kg: 60, reps: 12, date: Date(timeIntervalSince1970: 2_000))
+        log(plain, kg: 70, reps: 10, date: Date(timeIntervalSince1970: 3_000))
+        try context.save()
+
+        func row(_ slot: ScheduleExercise) -> PrescribedSet {
+            PrescribedSet(exerciseId: slot.id, exerciseName: slot.displayName, liftKey: slot.liftKey, setIndex: 0,
+                          kg: 0, reps: slot.repMax, repMax: slot.repMax, isWorking: true, isWarmup: false,
+                          isAMRAP: false, isBBB: false, isOptional: false)
+        }
+        let hints = SessionService.lastHints(context: context, rows: [row(heavy), row(plain), row(light)],
+                                             schedule: schedule)
+        XCTAssertEqual(hints[heavy.id]?.kg, 100, "heavy slot must not show the newer light set")
+        XCTAssertEqual(hints[light.id]?.kg, 60)
+        XCTAssertEqual(hints[plain.id]?.kg, 70)
+
+        // A tagged slot with no history of its own falls back to the variant's last set.
+        var fresh = heavy
+        fresh.id = "ex-fresh"
+        fresh.progressionTag = "volume"
+        schedule.days[0].exercises.append(fresh)
+        let fallback = SessionService.lastHints(context: context, rows: [row(fresh)], schedule: schedule)
+        XCTAssertEqual(fallback[fresh.id]?.kg, 60)
+    }
+}

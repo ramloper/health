@@ -11,7 +11,7 @@ struct StartingStrengthEngine: ProgressionEngine {
             let kg = state.workingKg[ex.stateKey] ?? ex.seedKg ?? 40
             for i in 0..<ex.sets {
                 rows.append(PrescribedSet(
-                    exerciseId: ex.id, exerciseName: ex.name, liftKey: ex.liftKey, setIndex: i,
+                    exerciseId: ex.id, exerciseName: ex.displayName, liftKey: ex.liftKey, setIndex: i,
                     kg: kg, reps: ex.repMax, repMax: ex.repMax,
                     isWorking: true, isWarmup: false, isAMRAP: false, isBBB: false, isOptional: false,
                     repMin: ex.repMin
@@ -35,7 +35,7 @@ struct StartingStrengthEngine: ProgressionEngine {
             working[key] = current
             if allHit {
                 stall[key] = 0
-                let lower = ex.exerciseId == "squat" || ex.exerciseId == "deadlift"
+                let lower = ex.exerciseId == "squat" || ex.exerciseId == "deadlift" || ex.plane == "lower"
                 working[key] = current + (lower ? 5 : 2.5)
             } else {
                 let fails = (stall[key] ?? 0) + 1

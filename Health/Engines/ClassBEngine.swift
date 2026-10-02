@@ -15,7 +15,7 @@ struct ClassBEngine: ProgressionEngine {
             let kg = state.workingKg[ex.stateKey] ?? ex.seedKg ?? 20
             for i in 0..<ex.sets {
                 rows.append(PrescribedSet(
-                    exerciseId: ex.id, exerciseName: ex.name, liftKey: ex.liftKey, setIndex: i,
+                    exerciseId: ex.id, exerciseName: ex.displayName, liftKey: ex.liftKey, setIndex: i,
                     kg: kg, reps: ex.repMax, repMax: ex.repMax,
                     isWorking: ex.isWorking, isWarmup: false, isAMRAP: false, isBBB: false, isOptional: ex.isOptional,
                     repMin: ex.repMin

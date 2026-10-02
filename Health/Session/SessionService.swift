@@ -168,17 +168,46 @@ enum SessionService {
     }
 
     /// Most recent completed working set for this variant (record key), across programs.
-    static func lastHint(context: ModelContext, liftKey: String) -> (kg: Double, reps: Int)? {
+    /// Last completed working set of a variant; with `slotIds`, only sets logged from those slots.
+    static func lastHint(context: ModelContext, liftKey: String, slotIds: [String]? = nil) -> (kg: Double, reps: Int)? {
         guard !liftKey.isEmpty else { return nil }
+        let predicate: Predicate<SetLog>
+        if let slotIds {
+            predicate = #Predicate {
+                $0.liftKey == liftKey && slotIds.contains($0.exerciseId) && $0.completed && $0.isWorking && !$0.isWarmup
+            }
+        } else {
+            predicate = #Predicate { $0.liftKey == liftKey && $0.completed && $0.isWorking && !$0.isWarmup }
+        }
         var descriptor = FetchDescriptor<SetLog>(
-            predicate: #Predicate {
-                $0.liftKey == liftKey && $0.completed && $0.isWorking && !$0.isWarmup
-            },
+            predicate: predicate,
             sortBy: [SortDescriptor(\.date, order: .reverse), SortDescriptor(\.kg, order: .reverse)]
         )
         descriptor.fetchLimit = 1
         guard let log = try? context.fetch(descriptor).first else { return nil }
         return (log.kg, log.reps)
+    }
+
+    /// Session hints keyed by `PrescribedSet.exerciseId` and scoped by the slot's `stateKey`: a tagged slot
+    /// (heavy/light, a/b, t1/t2) reads only sets logged from slots sharing its stateKey, so repeated slots of one
+    /// variant don't show each other's numbers. Untagged slots, rows without a slot (TM engines) and tagged slots
+    /// with no history yet fall back to the variant's last set.
+    static func lastHints(context: ModelContext, rows: [PrescribedSet],
+                          schedule: ProgramSchedule) -> [String: (kg: Double, reps: Int)] {
+        let slots = schedule.days.flatMap(\.exercises)
+        let slotById = Dictionary(slots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var map: [String: (kg: Double, reps: Int)] = [:]
+        for row in rows where map[row.exerciseId] == nil {
+            var hint: (kg: Double, reps: Int)?
+            if let slot = slotById[row.exerciseId], slot.progressionTag != nil {
+                let sameState = slots.filter { $0.stateKey == slot.stateKey }.map(\.id)
+                hint = lastHint(context: context, liftKey: row.liftKey, slotIds: sameState)
+            }
+            if let found = hint ?? lastHint(context: context, liftKey: row.liftKey) {
+                map[row.exerciseId] = found
+            }
+        }
+        return map
     }
 
     static func personalRecordKg(context: ModelContext, liftKey: String) -> Double? {
@@ -253,8 +282,8 @@ enum SessionService {
                 )
             },
             personalRecords: prs.map {
-                let name = ExerciseLibrary.shared.displayName(variantId: $0.liftId) ?? nicknames[$0.liftId] ?? $0.liftId
-                return .init(lift: name, liftId: $0.liftId, kg: $0.kg, date: $0.date)
+                .init(lift: PRGrouping.rowTitle($0.liftId, nicknames: nicknames, library: .shared),
+                      liftId: $0.liftId, kg: $0.kg, date: $0.date)
             }
         )
         let encoder = JSONEncoder()

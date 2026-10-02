@@ -20,7 +20,7 @@ struct FiveThreeOneBBBEngine: ProgressionEngine {
         let week = ((state.weekIndex - 1) % 4) + 1
         let work = weekWork[week] ?? weekWork[1]!
         let main = day.exercises.first
-        let name = main?.name ?? day.name
+        let name = main?.displayName ?? day.name
         let liftKey = main?.variantId ?? lift
         var rows: [PrescribedSet] = []
         var idx = 0

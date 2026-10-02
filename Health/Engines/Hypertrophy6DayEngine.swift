@@ -14,7 +14,7 @@ struct Hypertrophy6DayEngine: ProgressionEngine {
             for i in 0..<setCount {
                 rows.append(PrescribedSet(
                     exerciseId: ex.id,
-                    exerciseName: ex.name,
+                    exerciseName: ex.displayName,
                     liftKey: ex.liftKey,
                     setIndex: i,
                     kg: kg,

@@ -17,7 +17,7 @@ struct NSuns5DayEngine: ProgressionEngine {
         let lift = dayLift[day.id] ?? day.id
         let tmKey = lift == "cap" ? "bench" : lift
         let tm = state.tm[tmKey] ?? state.tm[lift] ?? 100
-        let name = day.exercises.first?.name ?? day.name
+        let name = day.exercises.first?.displayName ?? day.name
         let liftKey = day.exercises.first?.variantId ?? lift
         var rows: [PrescribedSet] = []
         for (i, pair) in t1.enumerated() {
@@ -28,7 +28,7 @@ struct NSuns5DayEngine: ProgressionEngine {
                 isWorking: true, isWarmup: i < 3, isAMRAP: amrap, isBBB: false, isOptional: false
             ))
         }
-        let t2Name = day.exercises.dropFirst().first?.name ?? "T2"
+        let t2Name = day.exercises.dropFirst().first?.displayName ?? "T2"
         let t2Id = day.exercises.dropFirst().first?.id ?? "\(lift)-t2"
         let t2LiftKey = day.exercises.dropFirst().first?.variantId ?? liftKey
         for (i, pair) in t2.enumerated() {

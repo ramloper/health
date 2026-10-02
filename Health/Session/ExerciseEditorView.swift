@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct ExerciseEditorView: View {
     var dayName: String
@@ -194,11 +195,35 @@ struct ExercisePickerSheet: View {
     @State private var group: MuscleGroup?
     @State private var equipment: Equipment?
     @State private var path: [String] = []
+    @Query(filter: #Predicate<UserVariant> { !$0.isHidden }, sort: \UserVariant.createdAt)
+    private var userVariants: [UserVariant]
 
     private var library: ExerciseLibrary { ExerciseLibrary.shared }
 
-    private var hits: [ExerciseLibrary.SearchHit] {
-        library.search(query, group: group, equipment: equipment)
+    /// Library hits plus user-variant nickname/brand matches: a match on a library exercise attaches to (or adds)
+    /// that exercise's row; `other` matches are listed on their own under "기타".
+    private struct Results {
+        var hits: [ExerciseLibrary.SearchHit] = []
+        var userMatches: [String: [UserVariant]] = [:]
+        var others: [UserVariant] = []
+    }
+
+    private var results: Results {
+        let hits = library.search(query, group: group, equipment: equipment)
+        let matches = UserVariantSearch.match(query: trimmedQuery, variants: userVariants, library: library)
+        guard !matches.isEmpty else { return Results(hits: hits) }
+        var result = Results()
+        result.others = group == nil && equipment == nil ? matches.filter { $0.exerciseId == ExerciseLibrary.otherId } : []
+        result.userMatches = Dictionary(grouping: matches.filter { $0.exerciseId != ExerciseLibrary.otherId }, by: \.exerciseId)
+        if result.userMatches.isEmpty {
+            result.hits = hits
+        } else {
+            let byId = Dictionary(hits.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            result.hits = library.search("", group: group, equipment: equipment).compactMap { candidate in
+                byId[candidate.id] ?? (result.userMatches[candidate.id] == nil ? nil : candidate)
+            }
+        }
+        return result
     }
 
     private var trimmedQuery: String {
@@ -217,7 +242,9 @@ struct ExercisePickerSheet: View {
     }
 
     private var root: some View {
-        let hits = hits
+        let results = results
+        let normalizedQuery = SearchNormalizer.normalize(trimmedQuery)
+        let exactOther = results.others.contains { SearchNormalizer.normalize($0.nickname) == normalizedQuery }
         let unfiltered = group == nil && equipment == nil && trimmedQuery.isEmpty
         return VStack(spacing: 0) {
             HStack {
@@ -264,11 +291,22 @@ struct ExercisePickerSheet: View {
 
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if hits.isEmpty && !trimmedQuery.isEmpty {
+                    if results.hits.isEmpty && !trimmedQuery.isEmpty && !exactOther {
                         freeTextRow(trimmedQuery)
                     }
-                    ForEach(hits) { hit in
-                        exerciseRow(hit)
+                    ForEach(results.hits) { hit in
+                        exerciseRow(hit, users: results.userMatches[hit.id] ?? [])
+                    }
+                    if !results.others.isEmpty {
+                        Text(PRGrouping.otherTitle)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Gym.faint)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 14)
+                            .accessibilityAddTraits(.isHeader)
+                        ForEach(results.others) { variant in
+                            otherVariantRow(variant)
+                        }
                     }
                     if unfiltered {
                         otherRow
@@ -309,11 +347,13 @@ struct ExercisePickerSheet: View {
         }
     }
 
-    private func exerciseRow(_ hit: ExerciseLibrary.SearchHit) -> some View {
+    private func exerciseRow(_ hit: ExerciseLibrary.SearchHit, users: [UserVariant]) -> some View {
         let exercise = hit.exercise
+        let names = users.map { $0.displayName(in: library) }
+            + hit.matchedVariants.compactMap { library.displayName(variantId: $0.id) }
         return rowContent(title: exercise.name,
                           subtitle: "\(exercise.group.label) · \(exercise.equipment.label)",
-                          hint: matchedHint(hit.matchedVariants))
+                          hint: matchedHint(names))
             .onLongPressGesture(minimumDuration: 0.4) { addGeneric(exercise.id) }
             .onTapGesture { path.append(exercise.id) }
             .accessibilityElement(children: .combine)
@@ -331,6 +371,22 @@ struct ExercisePickerSheet: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { path.append(ExerciseLibrary.otherId) }
             .accessibilityIdentifier("ex-row-\(ExerciseLibrary.otherId)")
+    }
+
+    /// A matched `other` user variant, picked directly (no variant sheet).
+    private func otherVariantRow(_ variant: UserVariant) -> some View {
+        rowContent(title: variant.displayName(in: library), subtitle: "내가 만든 운동", hint: nil)
+            .onTapGesture { pickOther(variant) }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { pickOther(variant) }
+            .accessibilityIdentifier("variant-row-\(variant.id)")
+    }
+
+    private func pickOther(_ variant: UserVariant) {
+        onPick(.makeCustom(exerciseId: variant.exerciseId, variantId: variant.id,
+                           name: variant.displayName(in: library), plane: variant.plane))
+        close()
     }
 
     private func freeTextRow(_ text: String) -> some View {
@@ -375,11 +431,11 @@ struct ExercisePickerSheet: View {
         .contentShape(Rectangle())
     }
 
-    private func matchedHint(_ variants: [LibraryVariant]) -> String? {
-        guard !variants.isEmpty else { return nil }
-        let names = variants.prefix(2).compactMap { library.displayName(variantId: $0.id) }
-        let more = variants.count > 2 ? " 외 \(variants.count - 2)개" : ""
-        return names.joined(separator: ", ") + more
+    /// Matched variant names (user variants first), at most two plus a count.
+    private func matchedHint(_ names: [String]) -> String? {
+        guard !names.isEmpty else { return nil }
+        let more = names.count > 2 ? " 외 \(names.count - 2)개" : ""
+        return names.prefix(2).joined(separator: ", ") + more
     }
 
     private func addGeneric(_ exerciseId: String) {

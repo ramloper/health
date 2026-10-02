@@ -3,8 +3,8 @@ import SwiftData
 import os
 
 /// Opens the 1.1 store (`soejil-v2.store`). Before any container exists it removes the 1.0 store
-/// (records were re-keyed, no migration) and, if the v2 store can't be opened, moves it aside
-/// as `<name>.corrupt-<timestamp>` (never deletes it) and retries once.
+/// (records were re-keyed, no migration). If the v2 store can't be opened it retries once; a corrupt-looking
+/// store is first moved aside as `<name>.corrupt-<timestamp>` (never deleted).
 struct StoreBootstrap {
     struct Result: Equatable {
         var legacyRemoved = false
@@ -44,10 +44,16 @@ struct StoreBootstrap {
 
         // (1) 1.0 store: delete store + sidecars.
         let legacyFiles = storeFiles(legacyURL).filter { fileManager.fileExists(atPath: $0.path) }
-        if !legacyFiles.isEmpty {
-            for file in legacyFiles {
-                try? fileManager.removeItem(at: file)
+        var removedAny = false
+        for file in legacyFiles {
+            do {
+                try fileManager.removeItem(at: file)
+                removedAny = true
+            } catch {
+                logger.error("bootstrap(legacyRemoveFailed) \(String(describing: error), privacy: .private)")
             }
+        }
+        if removedAny {
             result.legacyRemoved = true
             logger.notice("bootstrap(legacyRemoved)")
         }
@@ -61,10 +67,15 @@ struct StoreBootstrap {
         do {
             container = try ModelContainer(for: schema, configurations: configuration)
         } catch {
-            moveAside(v2URL, fileManager: fileManager, now: now)
-            result.corruptMoved = true
+            // Only a store that looks corrupt is moved aside; anything else (disk full, locked, …) is retried in place.
+            if isCorruption(error) {
+                moveAside(v2URL, fileManager: fileManager, now: now)
+                result.corruptMoved = true
+                logger.error("bootstrap(corruptMoved) \(String(describing: error), privacy: .private)")
+            } else {
+                logger.error("bootstrap(openFailed) \(String(describing: error), privacy: .private)")
+            }
             result.retried = true
-            logger.error("bootstrap(corruptMoved) \(String(describing: error), privacy: .private)")
             do {
                 container = try ModelContainer(for: schema, configurations: configuration)
             } catch {
@@ -79,6 +90,22 @@ struct StoreBootstrap {
             defaults.set(noticeCorrupt, forKey: noticeKey)
         }
         return (container, result)
+    }
+
+    /// Corruption-like load errors: Cocoa 259 (file corrupt), 134100 (incompatible model), 134110 (migration failed),
+    /// SQLite 11 (malformed) / 26 (not a database), or SwiftData's `loadIssueModelContainer`. Checks underlying errors.
+    static func isCorruption(_ error: Error) -> Bool {
+        if let swiftData = error as? SwiftDataError, swiftData == .loadIssueModelContainer { return true }
+        let ns = error as NSError
+        switch (ns.domain, ns.code) {
+        case (NSCocoaErrorDomain, 259), (NSCocoaErrorDomain, 134100), (NSCocoaErrorDomain, 134110),
+             ("NSSQLiteErrorDomain", 11), ("NSSQLiteErrorDomain", 26):
+            return true
+        default:
+            break
+        }
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? Error { return isCorruption(underlying) }
+        return false
     }
 
     /// The SQLite store and its `-shm` / `-wal` siblings.

@@ -280,10 +280,10 @@ struct VariantPickerView: View {
         }
         .padding(.vertical, 12)
         .contentShape(Rectangle())
-        .onTapGesture { pick(row) }
         .onLongPressGesture(minimumDuration: 0.4) {
             if row.isUser { form = FormTarget(editingId: row.id) }
         }
+        .onTapGesture { pick(row) }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { pick(row) }

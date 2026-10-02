@@ -45,7 +45,9 @@ enum UserVariantStore {
         return variant
     }
 
-    static func update(_ variant: UserVariant, from draft: UserVariantDraft, context: ModelContext) {
+    /// Saves the edit, then renames the variant's slots in stored schedules: `/u-` slots display their stored `name`.
+    static func update(_ variant: UserVariant, from draft: UserVariantDraft, context: ModelContext,
+                       library: ExerciseLibrary = .shared) {
         guard draft.isValid else { return }
         variant.nickname = draft.trimmedNickname
         if draft.isOther {
@@ -55,20 +57,69 @@ enum UserVariantStore {
             variant.brandName = draft.brandId == nil ? draft.trimmedCustomBrand : nil
         }
         try? context.save()
+        renameSlots(variantId: variant.id, name: variant.displayName(in: library), context: context)
+    }
+
+    /// Rewrites the slot `name` for `variantId` in every cycle schedule, pending schedule and custom routine.
+    /// Drafts hold completed sets keyed by slot id, not names, so they are left alone.
+    private static func renameSlots(variantId: String, name: String, context: ModelContext) {
+        func renamed(_ schedule: ProgramSchedule?) -> ProgramSchedule? {
+            guard var schedule else { return nil }
+            var changed = false
+            for d in schedule.days.indices {
+                for e in schedule.days[d].exercises.indices where schedule.days[d].exercises[e].variantId == variantId
+                    && schedule.days[d].exercises[e].name != name {
+                    schedule.days[d].exercises[e].name = name
+                    changed = true
+                }
+            }
+            return changed ? schedule : nil
+        }
+        for cycle in (try? context.fetch(FetchDescriptor<TrainingCycle>())) ?? [] {
+            if !cycle.scheduleJSON.isEmpty, let schedule = renamed(cycle.resolvedSchedule()) { cycle.saveSchedule(schedule) }
+            if let pending = renamed(cycle.pendingSchedule) { cycle.pendingSchedule = pending }
+        }
+        for routine in (try? context.fetch(FetchDescriptor<CustomRoutine>())) ?? [] {
+            if let schedule = renamed(routine.resolvedSchedule()) { routine.apply(schedule) }
+        }
+        try? context.save()
     }
 
     /// Free text in the picker becomes a user variant of `other` (AC14), never a library exercise.
+    /// Re-adding the same text reuses the existing visible `other` variant so records stay under one key.
     static func addFreeText(_ text: String, context: ModelContext, library: ExerciseLibrary = .shared) -> ScheduleExercise? {
         let draft = UserVariantDraft(exerciseId: ExerciseLibrary.otherId, nickname: text, plane: PlaneGuess.guess(text))
-        guard let variant = insert(draft, context: context, library: library) else { return nil }
+        guard draft.isValid else { return nil }
+        let key = SearchNormalizer.normalize(draft.trimmedNickname)
+        let otherId = ExerciseLibrary.otherId
+        let others = (try? context.fetch(FetchDescriptor<UserVariant>(
+            predicate: #Predicate { $0.exerciseId == otherId && !$0.isHidden },
+            sortBy: [SortDescriptor(\.createdAt)]))) ?? []
+        let existing = others.first { SearchNormalizer.normalize($0.nickname) == key }
+        guard let variant = existing ?? insert(draft, context: context, library: library) else { return nil }
         return .makeCustom(exerciseId: variant.exerciseId, variantId: variant.id, name: variant.nickname, plane: variant.plane)
     }
 
-    /// A variant with any logged set or PR is hidden instead of deleted so records keep their key.
+    /// A variant with any logged set or PR, or used by a stored schedule, is hidden instead of deleted
+    /// so records keep their key and schedules keep resolving.
     static func canDelete(_ variantId: String, context: ModelContext) -> Bool {
         let sets = FetchDescriptor<SetLog>(predicate: #Predicate { $0.liftKey == variantId })
         let prs = FetchDescriptor<PersonalRecord>(predicate: #Predicate { $0.liftId == variantId })
-        return ((try? context.fetchCount(sets)) ?? 1) == 0 && ((try? context.fetchCount(prs)) ?? 1) == 0
+        guard ((try? context.fetchCount(sets)) ?? 1) == 0, ((try? context.fetchCount(prs)) ?? 1) == 0 else { return false }
+        return !isInSchedule(variantId, context: context)
+    }
+
+    private static func isInSchedule(_ variantId: String, context: ModelContext) -> Bool {
+        func uses(_ schedule: ProgramSchedule?) -> Bool {
+            schedule?.days.contains { $0.exercises.contains { $0.variantId == variantId } } ?? false
+        }
+        func decoded(_ json: String) -> ProgramSchedule? {
+            json.isEmpty ? nil : try? JSONDecoder().decode(ProgramSchedule.self, from: Data(json.utf8))
+        }
+        guard let cycles = try? context.fetch(FetchDescriptor<TrainingCycle>()),
+              let routines = try? context.fetch(FetchDescriptor<CustomRoutine>()) else { return true }
+        return cycles.contains { uses(decoded($0.scheduleJSON)) || uses(decoded($0.pendingScheduleJSON)) }
+            || routines.contains { uses($0.resolvedSchedule()) }
     }
 
     /// Deletes when unrecorded, otherwise hides. Returns true when deleted.
@@ -82,6 +133,21 @@ enum UserVariantStore {
         }
         try? context.save()
         return deleted
+    }
+}
+
+/// Picker search over user variants (H1). Pure: callers pass the variants (e.g. from `@Query`).
+enum UserVariantSearch {
+    /// Visible variants whose nickname or brand (library or typed) contains the normalized query. Empty query → [].
+    static func match(query: String, variants: [UserVariant], library: ExerciseLibrary = .shared) -> [UserVariant] {
+        let q = SearchNormalizer.normalize(query)
+        guard !q.isEmpty else { return [] }
+        return variants.filter { variant in
+            guard !variant.isHidden else { return false }
+            let brand = variant.brandId.flatMap { library.brand(id: $0) }
+            let terms = [variant.nickname, variant.brandName, brand?.name, brand?.englishName].compactMap { $0 }
+            return terms.contains { SearchNormalizer.normalize($0).contains(q) }
+        }
     }
 }
 

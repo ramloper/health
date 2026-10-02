@@ -445,7 +445,7 @@ struct TodayView: View {
 
     private func sessionExerciseCard(_ group: [PrescribedSet]) -> some View {
         let first = group[0]
-        let hint = hints[first.liftKey]
+        let hint = hints[first.exerciseId]
         return GymCard(padding: 20) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
@@ -609,21 +609,15 @@ struct TodayView: View {
         }
     }
 
-    private func loadHints(_ rows: [PrescribedSet]) {
-        var map: [String: (kg: Double, reps: Int)] = [:]
-        for row in rows where map[row.liftKey] == nil {
-            if let hint = SessionService.lastHint(context: context, liftKey: row.liftKey) {
-                map[row.liftKey] = hint
-            }
-        }
-        hints = map
+    private func loadHints(_ rows: [PrescribedSet], schedule: ProgramSchedule) {
+        hints = SessionService.lastHints(context: context, rows: rows, schedule: schedule)
     }
 
     // MARK: Workout lifecycle
 
     private func startWorkout(cycle: TrainingCycle, schedule: ProgramSchedule) {
         let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
-        loadHints(rows)
+        loadHints(rows, schedule: schedule)
         seedDraft(rows)
         focusGroupId = rows.first?.groupId
         isWorkingOut = true
@@ -650,7 +644,7 @@ struct TodayView: View {
                 draft[idx].completed = set.completed
             }
         }
-        loadHints(rows)
+        loadHints(rows, schedule: schedule)
         let firstOpen = rows.first(where: { !isDone($0) }) ?? rows.first
         focusGroupId = firstOpen?.groupId
         isWorkingOut = true

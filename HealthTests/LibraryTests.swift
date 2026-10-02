@@ -194,18 +194,23 @@ final class LibraryTests: XCTestCase {
 
     // MARK: AC4 (interim) program names resolve by name/alias
 
+    /// Programs carry `exerciseId`/`variantId` per slot, so resolution is by id, not by name/alias.
     func testProgramExerciseNamesResolve() throws {
-        var terms = Set<String>()
-        for ex in Self.bundled.exercises {
-            terms.formUnion(([ex.name] + ex.aliases).map(SearchNormalizer.normalize))
-        }
-        var names = Set<String>()
+        var unresolved: [String] = []
+        var slotCount = 0
         for id in ProgramCatalog.allIds {
             let schedule = try CatalogTests.schedule(id)
-            for day in schedule.days { names.formUnion(day.exercises.map(\.name)) }
+            for day in schedule.days {
+                for slot in day.exercises {
+                    slotCount += 1
+                    if Self.bundled.exercise(id: slot.exerciseId) == nil || Self.bundled.variant(id: slot.variantId) == nil {
+                        unresolved.append("\(id)/\(day.id)/\(slot.id): \(slot.exerciseId) \(slot.variantId)")
+                    }
+                }
+            }
         }
-        let unresolved = names.filter { !terms.contains(SearchNormalizer.normalize($0)) }.sorted()
-        XCTAssertTrue(unresolved.isEmpty, "\(unresolved.count)/\(names.count) program names unresolved: \(unresolved)")
+        XCTAssertGreaterThan(slotCount, 0)
+        XCTAssertTrue(unresolved.isEmpty, "\(unresolved.count)/\(slotCount) program slots unresolved: \(unresolved)")
     }
 
     // MARK: AC5 load time
