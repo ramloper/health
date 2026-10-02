@@ -14,8 +14,9 @@ struct HistoryView: View {
     @State private var showAllPRs = false
     private let prPreviewCount = 6
 
-    private var visiblePRs: [PersonalRecord] {
-        showAllPRs ? prs : Array(prs.prefix(prPreviewCount))
+    private var prGroups: [PRGroup] {
+        PRGrouping.group(prs.map { PRInput(liftId: $0.liftId, kg: $0.kg, date: $0.date) },
+                         nicknames: Dictionary(userVariants.map { ($0.id, $0.nickname) }, uniquingKeysWith: { first, _ in first }))
     }
 
     var body: some View {
@@ -38,34 +39,52 @@ struct HistoryView: View {
                                 .foregroundStyle(Gym.muted)
                                 .padding(20)
                         } else {
+                            let groups = prGroups
+                            let visible = showAllPRs ? groups : Array(groups.prefix(prPreviewCount))
                             VStack(spacing: 0) {
-                                ForEach(visiblePRs) { pr in
-                                    HStack {
-                                        Text(displayName(pr.liftId))
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundStyle(Gym.text)
-                                        Spacer()
-                                        (Text(pr.kg.gymKg).font(.system(size: 18, weight: .bold).monospacedDigit())
-                                         + Text("kg").font(.system(size: 13, weight: .medium)))
-                                            .foregroundStyle(Gym.text)
-                                    }
-                                    .padding(.vertical, 16)
-                                    .contentShape(Rectangle())
-                                    .contextMenu {
-                                        Button("이 PR 삭제", role: .destructive) { pendingDeletePR = pr }
+                                ForEach(visible) { group in
+                                    VStack(spacing: 0) {
+                                        Text(group.title)
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(Gym.muted)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(.top, 14)
+                                            .padding(.bottom, 2)
+                                            .accessibilityIdentifier("pr-group-\(group.id)")
+                                        ForEach(group.rows) { row in
+                                            HStack {
+                                                Text(row.title)
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundStyle(Gym.text)
+                                                Spacer()
+                                                (Text(row.kg.gymKg).font(.system(size: 18, weight: .bold).monospacedDigit())
+                                                 + Text("kg").font(.system(size: 13, weight: .medium)))
+                                                    .foregroundStyle(Gym.text)
+                                            }
+                                            .padding(.vertical, 10)
+                                            .contentShape(Rectangle())
+                                            .accessibilityElement(children: .combine)
+                                            .accessibilityIdentifier("pr-row-\(row.variantId)")
+                                            .contextMenu {
+                                                Button("이 PR 삭제", role: .destructive) {
+                                                    pendingDeletePR = bestRecord(for: row.variantId)
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                                if prs.count > prPreviewCount {
+                                if groups.count > prPreviewCount {
                                     Button {
                                         withAnimation { showAllPRs.toggle() }
                                     } label: {
-                                        Text(showAllPRs ? "접기" : "전체 보기 (\(prs.count))")
+                                        Text(showAllPRs ? "접기" : "더 보기 (\(groups.count - prPreviewCount))")
                                             .font(.system(size: 14, weight: .semibold))
                                             .foregroundStyle(Gym.accent)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 14)
                                     }
                                     .buttonStyle(.plain)
+                                    .accessibilityIdentifier("pr-more")
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -161,13 +180,10 @@ struct HistoryView: View {
         }
     }
 
-    /// PRs are keyed by variant id. Library variants resolve by id, user variants by nickname.
-    /// Grouping by base exercise comes later; `other` records fall back to "기타".
-    private func displayName(_ id: String) -> String {
-        if let name = ExerciseLibrary.shared.displayName(variantId: id) { return name }
-        if let nickname = userVariants.first(where: { $0.id == id })?.nickname { return nickname }
-        if ExerciseLibrary.baseId(ofVariant: id) == ExerciseLibrary.otherId { return "기타" }
-        return id.isEmpty ? "운동" : id
+    /// The record shown for a variant row: its highest PR (latest on ties), matching `PRGrouping`.
+    private func bestRecord(for variantId: String) -> PersonalRecord? {
+        prs.filter { $0.liftId == variantId }
+            .max { ($0.kg, $0.date) < ($1.kg, $1.date) }
     }
 
     private func schedule(for session: WorkoutSession) -> ProgramSchedule? {
