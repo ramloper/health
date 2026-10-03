@@ -29,7 +29,7 @@ struct RootView: View {
 
     private var storeNoticeText: String? {
         switch storeNotice {
-        case StoreBootstrap.noticeReset: "1.1부터 기록 구조가 바뀌어 이전 기록은 초기화됐어요."
+        case StoreBootstrap.noticeReset: "기록 구조가 바뀌어 이전 기록은 초기화됐어요."
         case StoreBootstrap.noticeCorrupt: "저장소를 열 수 없어 새로 만들었어요. 이전 파일은 기기에 보관했어요."
         default: nil
         }

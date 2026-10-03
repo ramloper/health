@@ -75,23 +75,24 @@ App Store Connect → 앱 → iOS 앱 → 1.0 준비 중
 
 - [ ] `curl -s -o /dev/null -w '%{http_code}' https://ramloper.github.io/health/shop.json` 결과가 200
 - [ ] docs/shop.json의 coupangURL이 전부 실제 파트너스 링크인지 확인
-- [ ] 실제 상품으로 `./scripts/screenshots.sh` 재실행해 08-shop 갱신
-- [ ] metadata의 "제3자 콘텐츠"·"로그인도 서버도 없이" 문구 결정
+- [x] 실제 상품으로 `./scripts/screenshots.sh` 재실행해 08-shop 갱신
+- [x] metadata의 "제3자 콘텐츠"·"로그인도 서버도 없이" 문구 수정 (제3자 콘텐츠 포함·권한 있음, "로그인 없이, 기록은 이 폰에만")
+
+## 5-2. 운동 라이브러리 (첫 공개 빌드에 포함)
+
+첫 공개 버전은 1.0.0 그대로, 빌드 4부터 운동 라이브러리가 들어가요. TestFlight 빌드 3의 기록은 초기화돼요.
+
+- [ ] 빌드 3 설치·기록 생성 → 그 위에 빌드 4 덮어 설치 → 초기화 안내가 **1회만** 뜨고, 재실행 시 다시 안 뜨는지
+- [ ] `python3 scripts/validate-library.py --require-summaries --require-variants` exit 0
+- [ ] `./scripts/screenshots.sh` → `build/screenshots/` 9장 (01-today ~ 09-picker)
+- [ ] 실기기: 운동 추가 → 부위·장비 칩 → 운동 탭 → 변형 시트(내 헬스장 섹션) → 추가
+- [ ] 실기기: 운동 행 길게 누르기 → 일반 변형이 바로 추가되고 피커가 닫히는지
+- [ ] 실기기: 프로필 → 우리 헬스장 브랜드 선택 → 앱 재시작 후 유지, 피커에서 해당 브랜드가 먼저 보이는지
+- [ ] 실기기: 기록 탭 PR이 기본 운동별로 묶이고 변형별 최고 기록이 보이는지
 
 ## 6. 다음 버전
 
 - `project.yml`의 `MARKETING_VERSION` 올리기 (1.0.0 → 1.1.0)
 - `./scripts/release.sh` → Transporter → App Store Connect에서 "+ 버전" → "이 버전의 새로운 기능" 작성 → 제출
-
-### 1.1 (운동 라이브러리)
-
-- [x] `project.yml`의 `MARKETING_VERSION` 1.1.0 (`CURRENT_PROJECT_VERSION`은 `release.sh`가 올림)
-- [ ] 1.0 빌드 설치·기록 생성 → 그 위에 1.1 덮어 설치 → 초기화 안내가 **1회만** 뜨고, 재실행 시 다시 안 뜨는지
-- [ ] `python3 scripts/validate-library.py --require-summaries --require-variants` exit 0
-- [ ] `./scripts/screenshots.sh` → `build/screenshots/` 9장 (01-today ~ 09-picker), App Store Connect 스크린샷 교체
-- [ ] `scripts/exercise-data/released-ids.txt`는 추가만(`python3 scripts/validate-library.py release`), 기존 id 삭제·변경 금지
-- [ ] metadata의 "이 버전의 새로운 기능 (1.1.0)" 복사
-- [ ] 실기기: 운동 추가 → 부위·장비 칩 → 운동 탭 → 변형 시트(내 헬스장 섹션) → 추가
-- [ ] 실기기: 운동 행 길게 누르기 → 일반 변형이 바로 추가되고 피커가 닫히는지
-- [ ] 실기기: 프로필 → 우리 헬스장 브랜드 선택 → 앱 재시작 후 유지, 피커에서 해당 브랜드가 먼저 보이는지
-- [ ] 실기기: 기록 탭 PR이 기본 운동별로 묶이고 변형별 최고 기록이 보이는지
+- `scripts/exercise-data/released-ids.txt`는 추가만(`python3 scripts/validate-library.py release`). 출시된 운동·변형 id는 삭제·변경 금지
+- 저장소 스키마를 바꾸면 `SchemaV2` 뒤에 마이그레이션 단계를 추가. 공개 후에는 기록 초기화 금지
