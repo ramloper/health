@@ -25,6 +25,10 @@
     {
       "id": "drink",
       "name": "음료"
+    },
+    {
+      "id": "running",
+      "name": "러닝"
     }
   ],
   "products": [
@@ -139,6 +143,102 @@
       "summary": "제로 탄산음료 355ml 24개",
       "imageURL": "https://ramloper.github.io/health/shop/images/sd500-viper-pump-zero.png",
       "coupangURL": "https://link.coupang.com/a/hv8snfsrm0"
+    },
+    {
+      "id": "run-flipbelt-zip",
+      "categoryId": "running",
+      "name": "플립벨트 지퍼 러닝벨트",
+      "summary": "흔들림 적은 허리 밀착형 러닝 벨트",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-flipbelt-zip.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx7Yv4zPfo"
+    },
+    {
+      "id": "run-hydrapak-flask",
+      "categoryId": "running",
+      "name": "하이드라팩 소프트플라스크 500ml",
+      "summary": "마실수록 줄어드는 러닝용 물병",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-hydrapak-flask.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8UYeksVM"
+    },
+    {
+      "id": "run-cep-calf-sleeve",
+      "categoryId": "running",
+      "name": "CEP 런 컴프레션 카프 슬리브 4.0",
+      "summary": "종아리 압박 슬리브",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-cep-calf-sleeve.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx74yOMi6e"
+    },
+    {
+      "id": "run-nike-socks",
+      "categoryId": "running",
+      "name": "나이키 에브리데이 쿠션 크루 양말",
+      "summary": "쿠션 장목 양말 3켤레",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-nike-socks.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8Y9Vjh3k"
+    },
+    {
+      "id": "run-injinji-toe-socks",
+      "categoryId": "running",
+      "name": "인진지 러너 미니크루 발가락양말",
+      "summary": "물집 방지 발가락 양말",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-injinji-toe-socks.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx79bfaWIu"
+    },
+    {
+      "id": "run-adidas-adizero-cap",
+      "categoryId": "running",
+      "name": "아디다스 아디제로 러닝캡",
+      "summary": "가볍고 통풍 좋은 메쉬 러닝캡",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-adidas-adizero-cap.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8cwIfq56"
+    },
+    {
+      "id": "run-triggerpoint-grid",
+      "categoryId": "running",
+      "name": "트리거포인트 그리드 폼롤러",
+      "summary": "러닝 후 근막 이완용 폼롤러",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-triggerpoint-grid.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8phFX19E"
+    },
+    {
+      "id": "run-zamst-rk1-plus",
+      "categoryId": "running",
+      "name": "잠스트 RK-1 Plus 무릎보호대",
+      "summary": "러닝용 무릎 외측 지지",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-zamst-rk1-plus.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8QRKm9PE"
+    },
+    {
+      "id": "run-noxgear-tracer2",
+      "categoryId": "running",
+      "name": "녹스기어 트레이서2 LED 조끼",
+      "summary": "야간 러닝용 충전식 LED 조끼",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-noxgear-tracer2.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8wjBHKsm"
+    },
+    {
+      "id": "run-nike-pacer-gloves",
+      "categoryId": "running",
+      "name": "나이키 페이서 라이트웨이트 러닝장갑",
+      "summary": "얇은 쌀쌀한 날 러닝 장갑",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-nike-pacer-gloves.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8D4wIjEi"
+    },
+    {
+      "id": "run-oakley-eyejacket",
+      "categoryId": "running",
+      "name": "오클리 아이자켓 리덕스 선글라스",
+      "summary": "땀에도 잘 안 흘러내리는 스포츠 선글라스",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-oakley-eyejacket.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8Isr2MlE"
+    },
+    {
+      "id": "run-armband",
+      "categoryId": "running",
+      "name": "브레텐 러닝 스포츠 암밴드",
+      "summary": "휴대폰 수납 조절형 암밴드",
+      "imageURL": "https://ramloper.github.io/health/shop/images/run-armband.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx8MCq9dW8"
     }
   ]
 }
