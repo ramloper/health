@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-02",
+  "updatedAt": "2026-10-03",
   "categories": [
     {
       "id": "protein",
@@ -139,6 +139,46 @@
       "summary": "제로 탄산음료 355ml 24개",
       "imageURL": "https://t3c.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/7213/66892d4e8ce00863e51c8582bd85cd2b96c041ab57bb0911c3ec1ba46d07.png",
       "coupangURL": "https://link.coupang.com/a/hv8snfsrm0"
+    },
+    {
+      "id": "sd500-eaa-yogurt",
+      "categoryId": "amino",
+      "name": "삼대오백 EAA 요구르트맛",
+      "summary": "필수아미노산 파우더 300g",
+      "imageURL": "https://thumbnail15.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/67096698968050-54e581c6-f965-4636-a7d4-0488cd34673e.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4vQPopxs"
+    },
+    {
+      "id": "sd500-worldclass-grape-300g",
+      "categoryId": "booster",
+      "name": "삼대오백 프리워크아웃 월드클래스 포도 300g",
+      "summary": "운동 전 부스터 포도맛 300g",
+      "imageURL": "https://t5a.coupangcdn.com/thumbnails/remote/492x492ex/image/vendor_inventory/5b7e/743ec2b7538f40ed4910209be8d308c21413e9d0c2d13d065c5d6e2b0096.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4A5pDOG4"
+    },
+    {
+      "id": "sd500-creatine-tablet",
+      "categoryId": "booster",
+      "name": "삼대오백 크레아틴 정제",
+      "summary": "크레아틴 모노 하이드레이트 120정",
+      "imageURL": "https://t4a.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/2026/01/04/10/0/eab44514-8ded-4e4b-b8aa-39d690e80075.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4Fr1BW2u"
+    },
+    {
+      "id": "sd500-shaker-white-800",
+      "categoryId": "gear",
+      "name": "삼대오백 프리미엄 쉐이커 화이트 800ml",
+      "summary": "단백질 쉐이커 보틀 화이트 800ml",
+      "imageURL": "https://t2c.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/66821737086658-be7d0135-ee18-41c0-b61e-744e4b4e7951.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4Jzy8Bbw"
+    },
+    {
+      "id": "sd500-shaker-black-600",
+      "categoryId": "gear",
+      "name": "삼대오백 프리미엄 쉐이커 블랙 600ml",
+      "summary": "단백질 쉐이커 보틀 블랙 600ml",
+      "imageURL": "https://t5c.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/66946952473620-dcb47518-728f-40a1-bb1f-7225c22dc192.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4NEiPwbY"
     }
   ]
 }
