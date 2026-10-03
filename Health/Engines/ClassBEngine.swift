@@ -12,10 +12,10 @@ struct ClassBEngine: ProgressionEngine {
         guard let day = schedule.days.first(where: { $0.id == state.nextDayId }) else { return [] }
         var rows: [PrescribedSet] = []
         for ex in day.exercises {
-            let kg = state.workingKg[ex.id] ?? ex.seedKg ?? 20
+            let kg = state.workingKg[ex.stateKey] ?? ex.seedKg ?? 20
             for i in 0..<ex.sets {
                 rows.append(PrescribedSet(
-                    exerciseId: ex.id, exerciseName: ex.name, setIndex: i,
+                    exerciseId: ex.id, exerciseName: ex.displayName, liftKey: ex.liftKey, setIndex: i,
                     kg: kg, reps: ex.repMax, repMax: ex.repMax,
                     isWorking: ex.isWorking, isWarmup: false, isAMRAP: false, isBBB: false, isOptional: ex.isOptional,
                     repMin: ex.repMin
@@ -27,16 +27,14 @@ struct ClassBEngine: ProgressionEngine {
 
     func advance(schedule: ProgramSchedule, profile: ProfileInputs, state: CycleState, session: CompletedSession) -> EngineAdvance {
         var working = state.workingKg
-        let grouped = Dictionary(grouping: session.sets.filter { $0.isWorking }) { $0.exerciseId }
-        for (id, sets) in grouped {
-            guard let ex = schedule.days.first(where: { $0.id == session.dayId })?.exercises.first(where: { $0.id == id }) else { continue }
-            let completed = sets.filter(\.completed)
-            guard let performedKg = completed.map(\.kg).min() else { continue }
-            let hitTop = completed.count == sets.count && completed.allSatisfy { $0.reps >= ex.repMax }
-            working[id] = performedKg
+        let day = schedule.days.first(where: { $0.id == session.dayId })
+        for group in ProgressionGroup.grouped(day: day, sets: session.sets.filter { $0.isWorking }) {
+            guard let performedKg = group.sets.filter(\.completed).map(\.kg).min() else { continue }
+            let hitTop = group.entries.allSatisfy { $0.set.completed && $0.set.reps >= $0.slot.repMax }
+            working[group.stateKey] = performedKg
             if hitTop {
-                let delta = ex.plane == "lower" ? 5.0 : 2.5
-                working[id] = performedKg + delta
+                let delta = group.lead.plane == "lower" ? 5.0 : 2.5
+                working[group.stateKey] = performedKg + delta
             }
         }
         return EngineAdvance(

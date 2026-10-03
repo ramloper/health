@@ -1,5 +1,8 @@
 import Foundation
 import SwiftData
+import os
+
+private let scheduleLogger = Logger(subsystem: "com.wooram.health", category: "schedule")
 
 @Model
 final class AthleteProfile {
@@ -9,6 +12,8 @@ final class AthleteProfile {
     var ohp1RM: Double
     var preferredProgramId: String
     var hasCompletedOnboarding: Bool
+    /// Brands available at the user's gym; shown first in the variant picker.
+    var gymBrandIds: [String] = []
 
     init(
         bench1RM: Double = 75,
@@ -85,10 +90,14 @@ final class TrainingCycle {
     }
 
     func resolvedSchedule() -> ProgramSchedule? {
-        if !scheduleJSON.isEmpty,
-           let data = scheduleJSON.data(using: .utf8),
-           let schedule = try? JSONDecoder().decode(ProgramSchedule.self, from: data) {
-            return schedule
+        if !scheduleJSON.isEmpty {
+            if let schedule = try? JSONDecoder().decode(ProgramSchedule.self, from: Data(scheduleJSON.utf8)) {
+                return schedule
+            }
+            scheduleLogger.error("scheduleDecodeFallback(\(self.programId, privacy: .public))")
+            #if DEBUG
+            assertionFailure("scheduleDecodeFallback(\(programId))")
+            #endif
         }
         return ProgramCatalog.load(programId)
     }
@@ -206,7 +215,7 @@ final class SetLog {
     var isAMRAP: Bool
     var isWarmup: Bool
     var isBBB: Bool
-    /// Program-independent key (guide title) so history and PRs merge across programs.
+    /// Record key: the variant id (`ScheduleExercise.liftKey`), shared across programs.
     var liftKey: String = ""
     /// Position within the session, since to-many relationships are unordered.
     var orderIndex: Int = 0
@@ -282,5 +291,38 @@ final class CustomRoutine {
         name = schedule.name
         scheduleJSON = TrainingCycle.encodeSchedule(schedule) ?? scheduleJSON
         updatedAt = .now
+    }
+}
+
+/// A user-made variant of a library exercise (brand + nickname). `other` variants carry no brand.
+@Model
+final class UserVariant {
+    @Attribute(.unique) var id: String
+    var exerciseId: String
+    var brandId: String?
+    var brandName: String?
+    var nickname: String
+    var plane: String
+    var isHidden: Bool
+    var createdAt: Date
+
+    init(
+        id: String,
+        exerciseId: String,
+        brandId: String? = nil,
+        brandName: String? = nil,
+        nickname: String,
+        plane: String,
+        isHidden: Bool = false,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.exerciseId = exerciseId
+        self.brandId = brandId
+        self.brandName = brandName
+        self.nickname = nickname
+        self.plane = plane
+        self.isHidden = isHidden
+        self.createdAt = createdAt
     }
 }

@@ -33,9 +33,10 @@ struct TodayView: View {
     }
 
     private struct GuideTarget: Identifiable {
-        var id: String { name + idKey }
+        var id: String { variantId + "|" + name }
         var name: String
-        var idKey: String
+        var exerciseId: String
+        var variantId: String
     }
 
     private struct PadTarget: Identifiable {
@@ -175,12 +176,12 @@ struct TodayView: View {
                             }
                             ForEach(Array(exercises.enumerated()), id: \.element.id) { index, ex in
                                 Button {
-                                    guideTarget = GuideTarget(name: ex.name, idKey: ex.id)
+                                    guideTarget = GuideTarget(name: ex.name, exerciseId: ex.exerciseId, variantId: ex.variantId)
                                 } label: {
                                     HStack(spacing: 12) {
                                         GymIndexBadge(text: "\(index + 1)")
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(ex.name)
+                                            Text(ex.displayName)
                                                 .font(.system(size: 15, weight: .semibold))
                                                 .foregroundStyle(Gym.text)
                                             Text("\(ex.sets)세트 \(ex.repLabel)")
@@ -433,11 +434,12 @@ struct TodayView: View {
 
     private func guideSheet(_ target: GuideTarget) -> some View {
         ExerciseGuideSheet(
+            exerciseId: target.exerciseId,
+            variantId: target.variantId,
             name: target.name,
-            id: target.idKey,
-            last: SessionService.lastHint(context: context, exerciseId: target.idKey, exerciseName: target.name),
-            prKg: SessionService.personalRecordKg(context: context, exerciseId: target.idKey, exerciseName: target.name),
-            e1rm: mappedOneRM(name: target.name)
+            last: SessionService.lastHint(context: context, liftKey: target.variantId),
+            prKg: SessionService.personalRecordKg(context: context, liftKey: target.variantId),
+            e1rm: OneRMMap.lift(forExerciseId: target.exerciseId).map { profile.inputs.oneRM(forLift: $0) }
         )
     }
 
@@ -457,7 +459,9 @@ struct TodayView: View {
                     }
                     Spacer()
                     Button {
-                        guideTarget = GuideTarget(name: first.exerciseName, idKey: first.exerciseId)
+                        guideTarget = GuideTarget(name: first.exerciseName,
+                                                  exerciseId: ExerciseLibrary.baseId(ofVariant: first.liftKey),
+                                                  variantId: first.liftKey)
                     } label: {
                         Text("i")
                             .font(.system(size: 13, weight: .bold))
@@ -564,7 +568,7 @@ struct TodayView: View {
     }
 
     private func workingKg(cycle: TrainingCycle, ex: ScheduleExercise) -> Double? {
-        cycle.state.workingKg[ex.id] ?? ex.seedKg
+        cycle.state.workingKg[ex.stateKey] ?? ex.seedKg
     }
 
     private func repRange(_ group: [PrescribedSet]) -> String {
@@ -590,15 +594,6 @@ struct TodayView: View {
         String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
-    private func mappedOneRM(name: String) -> Double? {
-        let n = name
-        if n.contains("벤치") { return profile.bench1RM }
-        if n.contains("스쿼트") { return profile.squat1RM }
-        if n.contains("데드") { return profile.dead1RM }
-        if n.contains("오버헤드") || n.contains("OHP") { return profile.ohp1RM }
-        return nil
-    }
-
     private func label(_ row: PrescribedSet, displayIndex: Int) -> String {
         if row.isWarmup { return "WU" }
         if row.isBBB { return "BBB" }
@@ -614,21 +609,15 @@ struct TodayView: View {
         }
     }
 
-    private func loadHints(_ rows: [PrescribedSet]) {
-        var map: [String: (kg: Double, reps: Int)] = [:]
-        for row in rows where map[row.exerciseId] == nil {
-            if let hint = SessionService.lastHint(context: context, exerciseId: row.exerciseId, exerciseName: row.exerciseName) {
-                map[row.exerciseId] = hint
-            }
-        }
-        hints = map
+    private func loadHints(_ rows: [PrescribedSet], schedule: ProgramSchedule) {
+        hints = SessionService.lastHints(context: context, rows: rows, schedule: schedule)
     }
 
     // MARK: Workout lifecycle
 
     private func startWorkout(cycle: TrainingCycle, schedule: ProgramSchedule) {
         let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
-        loadHints(rows)
+        loadHints(rows, schedule: schedule)
         seedDraft(rows)
         focusGroupId = rows.first?.groupId
         isWorkingOut = true
@@ -655,7 +644,7 @@ struct TodayView: View {
                 draft[idx].completed = set.completed
             }
         }
-        loadHints(rows)
+        loadHints(rows, schedule: schedule)
         let firstOpen = rows.first(where: { !isDone($0) }) ?? rows.first
         focusGroupId = firstOpen?.groupId
         isWorkingOut = true

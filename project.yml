@@ -12,7 +12,7 @@ settings:
     SWIFT_VERSION: "5.10"
     DEVELOPMENT_TEAM: 28829JTDUM
     CODE_SIGN_STYLE: Automatic
-    CURRENT_PROJECT_VERSION: "3"
+    CURRENT_PROJECT_VERSION: "4"
     MARKETING_VERSION: "1.0.0"
     GENERATE_INFOPLIST_FILE: YES
     INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
@@ -43,7 +43,11 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "Resources/Programs/**"
+          - "Resources/Exercises/**"
       - path: Health/Resources/Programs
+        type: folder
+        buildPhase: resources
+      - path: Health/Resources/Exercises
         type: folder
         buildPhase: resources
     settings:
