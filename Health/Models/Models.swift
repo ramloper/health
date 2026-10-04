@@ -164,8 +164,18 @@ final class TrainingCycle {
 
     var hasDraft: Bool { !draftJSON.isEmpty }
 
-    func saveDraft(_ sets: [CompletedSet], dayId: String) {
-        if let data = try? JSONEncoder().encode(sets), let text = String(data: data, encoding: .utf8) {
+    /// Stored as a plain set array when the session has no today-only changes (the 1.0 format), otherwise as
+    /// `{ sets, plan }`.
+    private struct DraftEnvelope: Codable {
+        var sets: [CompletedSet]
+        var plan: SessionPlan
+    }
+
+    func saveDraft(_ sets: [CompletedSet], dayId: String, plan: SessionPlan = SessionPlan()) {
+        let data = plan.isEmpty
+            ? try? JSONEncoder().encode(sets)
+            : try? JSONEncoder().encode(DraftEnvelope(sets: sets, plan: plan))
+        if let data, let text = String(data: data, encoding: .utf8) {
             draftJSON = text
             draftDayId = dayId
             if draftStartedAt == nil { draftStartedAt = .now }
@@ -173,9 +183,19 @@ final class TrainingCycle {
     }
 
     func loadDraft() -> [CompletedSet]? {
+        guard !draftJSON.isEmpty else { return nil }
+        let data = Data(draftJSON.utf8)
+        if let sets = try? JSONDecoder().decode([CompletedSet].self, from: data) { return sets }
+        return (try? JSONDecoder().decode(DraftEnvelope.self, from: data))?.sets
+    }
+
+    /// Today-only extras and order saved with the draft; empty when there are none.
+    func loadDraftPlan() -> SessionPlan {
         guard !draftJSON.isEmpty,
-              let sets = try? JSONDecoder().decode([CompletedSet].self, from: Data(draftJSON.utf8)) else { return nil }
-        return sets
+              let envelope = try? JSONDecoder().decode(DraftEnvelope.self, from: Data(draftJSON.utf8)) else {
+            return SessionPlan()
+        }
+        return envelope.plan
     }
 
     func clearDraft() {

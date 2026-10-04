@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct HealthApp: App {
@@ -10,6 +11,9 @@ struct HealthApp: App {
 
     init() {
         Gym.applyChrome()
+        // Lets the rest-timer notification ring while the app is on screen.
+        UNUserNotificationCenter.current().delegate = RestAlertPresenter.shared
+        RestNotifier.refreshAuthorization()
         // The exercise library loads once, here, before any view touches it.
         _ = ExerciseLibrary.shared
         do {

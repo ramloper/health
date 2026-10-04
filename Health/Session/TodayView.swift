@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UserNotifications
 
 struct TodayView: View {
     @Environment(\.modelContext) private var context
@@ -25,6 +24,10 @@ struct TodayView: View {
     @State private var showRest = false
     @State private var showExitDialog = false
     @State private var showEmptyFinishAlert = false
+    /// Today-only extras and order for the running session.
+    @State private var plan = SessionPlan()
+    @State private var showPlan = false
+    @State private var showAddExtra = false
 
     private struct DayEditor: Identifiable {
         var id: String
@@ -75,7 +78,12 @@ struct TodayView: View {
         }
         .onChange(of: draft) { _, sets in
             guard isWorkingOut, let cycle else { return }
-            cycle.saveDraft(sets, dayId: cycle.nextDayId)
+            cycle.saveDraft(sets, dayId: cycle.nextDayId, plan: plan)
+            try? context.save()
+        }
+        .onChange(of: plan) { _, plan in
+            guard isWorkingOut, let cycle else { return }
+            cycle.saveDraft(draft, dayId: cycle.nextDayId, plan: plan)
             try? context.save()
         }
         .onDisappear {
@@ -247,14 +255,15 @@ struct TodayView: View {
     // MARK: Session
 
     private func sessionScroll(cycle: TrainingCycle, schedule: ProgramSchedule) -> some View {
-        let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
+        let rows = sessionRows(cycle: cycle, schedule: schedule)
         let groups = TodayController.grouped(rows)
         let dayName = schedule.days.first(where: { $0.id == cycle.nextDayId })?.name ?? "운동"
         let doneCount = draft.filter(\.completed).count
         let focusId = focusGroupId ?? groups.first?.first?.groupId
         let focusIndex = groups.firstIndex(where: { $0.first?.groupId == focusId }) ?? 0
         let current = groups.indices.contains(focusIndex) ? groups[focusIndex] : []
-        let next = groups.indices.contains(focusIndex + 1) ? groups[focusIndex + 1] : nil
+        // The next exercise is the first one after this that still has open sets; skipped ones come back at the end.
+        let next = SessionPlan.nextOpenGroup(groups: groups, currentId: current.first?.groupId, isDone: isDone)
         let unticked = current.filter { !isDone($0) }
         let primary = primaryAction(unticked: unticked.count, hasNext: next != nil)
         return VStack(spacing: 0) {
@@ -267,16 +276,20 @@ struct TodayView: View {
                         .foregroundStyle(Gym.muted)
                 }
                 Spacer()
-                HStack(spacing: 6) {
-                    Circle().fill(Gym.accent).frame(width: 8, height: 8)
-                    Text("\(dayName) · \(doneCount)/\(rows.count)")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Gym.muted)
+                Button { showPlan = true } label: {
+                    HStack(spacing: 6) {
+                        Circle().fill(Gym.accent).frame(width: 8, height: 8)
+                        Text("\(dayName) · \(doneCount)/\(rows.count)")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Gym.muted)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Gym.card)
+                    .clipShape(Capsule())
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Gym.card)
-                .clipShape(Capsule())
+                .buttonStyle(.plain)
+                .accessibilityLabel("오늘 운동 목록, \(dayName) \(doneCount)/\(rows.count)")
                 Spacer()
                 Button {
                     showMetronome = true
@@ -318,6 +331,14 @@ struct TodayView: View {
                             .opacity(0.7)
                         }
                         .buttonStyle(.plain)
+                    }
+                    HStack(spacing: 10) {
+                        sessionToolButton("순서 바꾸기", system: "arrow.up.arrow.down", identifier: "session-plan-open") {
+                            showPlan = true
+                        }
+                        sessionToolButton("운동 추가", system: "plus", identifier: "session-add-extra") {
+                            showAddExtra = true
+                        }
                     }
                 }
                 .padding(.horizontal, 24)
@@ -373,12 +394,39 @@ struct TodayView: View {
             if focusGroupId == nil { focusGroupId = rows.first?.groupId }
         }
         .onChange(of: cycle.nextDayId) { _, _ in
+            plan = SessionPlan()
             let nextRows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
             seedDraft(nextRows)
             focusGroupId = nextRows.first?.groupId
         }
         .sheet(item: $guideTarget) { target in
             guideSheet(target)
+        }
+        .sheet(isPresented: $showPlan) {
+            SessionPlanSheet(
+                groups: groups,
+                focusId: current.first?.groupId,
+                extraSlotIds: Set(plan.extras.map(\.id)),
+                doneByGroup: Dictionary(grouping: rows.filter(isDone), by: \.groupId).mapValues(\.count),
+                onMove: { index, offset in
+                    changePlan(cycle: cycle, schedule: schedule) {
+                        $0.move(groupIds: groups.compactMap { $0.first?.groupId }, index: index, by: offset)
+                    }
+                },
+                onFocus: { focusGroupId = $0 },
+                onAdd: { addExtra($0, cycle: cycle, schedule: schedule) },
+                onRemoveExtra: { slotId in
+                    changePlan(cycle: cycle, schedule: schedule) { $0.removeExtra(slotId: slotId) }
+                },
+                onSetExtraSets: { slotId, sets in
+                    changePlan(cycle: cycle, schedule: schedule) { $0.setExtraSets(slotId: slotId, sets: sets) }
+                }
+            )
+        }
+        .sheet(isPresented: $showAddExtra) {
+            ExercisePickerSheet(title: "오늘만 운동 추가", close: { showAddExtra = false }) { picked in
+                addExtra(picked, cycle: cycle, schedule: schedule)
+            }
         }
         .sheet(item: $pad) { target in
             NumberPadSheet(
@@ -425,6 +473,21 @@ struct TodayView: View {
             case .finish: return "세션 완료"
             }
         }
+    }
+
+    private func sessionToolButton(_ title: String, system: String, identifier: String,
+                                   action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: system)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Gym.muted)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Gym.card)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
     }
 
     private func primaryAction(unticked: Int, hasNext: Bool) -> PrimaryAction {
@@ -609,6 +672,48 @@ struct TodayView: View {
         }
     }
 
+    // MARK: Today-only plan
+
+    /// Prescribed rows plus today-only extras, in the order chosen for this session.
+    private func sessionRows(cycle: TrainingCycle, schedule: ProgramSchedule) -> [PrescribedSet] {
+        plan.rows(prescribed: SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs))
+    }
+
+    /// Applies a today-only change and brings the draft in line with the resulting rows (kept in session order,
+    /// so the history shows the order the workout was actually done in).
+    private func changePlan(cycle: TrainingCycle, schedule: ProgramSchedule, _ change: (inout SessionPlan) -> Void) {
+        var next = plan
+        change(&next)
+        // A today-only exercise never loses sets that are already ticked.
+        for (index, ex) in next.extras.enumerated() {
+            let ticked = draft.filter { $0.exerciseId == ex.id && $0.completed }.map(\.setIndex).max().map { $0 + 1 } ?? 0
+            if ex.sets < ticked { next.extras[index].sets = ticked }
+        }
+        plan = next
+        let rows = sessionRows(cycle: cycle, schedule: schedule)
+        draft = SessionPlan.syncedDraft(draft, rows: rows)
+        if !rows.contains(where: { $0.groupId == focusGroupId }) {
+            focusGroupId = (rows.first(where: { !isDone($0) }) ?? rows.first)?.groupId
+        }
+    }
+
+    /// Adds an exercise for this session only, starting from the last weight and reps logged for that machine.
+    private func addExtra(_ picked: ScheduleExercise, cycle: TrainingCycle, schedule: ProgramSchedule) {
+        var ex = picked
+        if let hint = SessionService.lastHint(context: context, liftKey: ex.liftKey) {
+            ex.seedKg = hint.kg
+            ex.targetReps = min(50, max(1, hint.reps))
+            hints[ex.id] = hint
+        } else if ExerciseLibrary.shared.exercise(id: ex.exerciseId)?.equipment == .bodyweight {
+            ex.seedKg = 0
+        }
+        let currentRows = sessionRows(cycle: cycle, schedule: schedule)
+        let currentDone = currentRows.filter { $0.groupId == focusGroupId }.allSatisfy(isDone)
+        changePlan(cycle: cycle, schedule: schedule) { $0.add(ex) }
+        // Finished with the current exercise: go straight to the one just added.
+        if currentDone { focusGroupId = SessionPlan.groupId(for: ex) }
+    }
+
     private func loadHints(_ rows: [PrescribedSet], schedule: ProgramSchedule) {
         hints = SessionService.lastHints(context: context, rows: rows, schedule: schedule)
     }
@@ -616,6 +721,7 @@ struct TodayView: View {
     // MARK: Workout lifecycle
 
     private func startWorkout(cycle: TrainingCycle, schedule: ProgramSchedule) {
+        plan = SessionPlan()
         let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
         loadHints(rows, schedule: schedule)
         seedDraft(rows)
@@ -634,8 +740,9 @@ struct TodayView: View {
             SessionService.clearDraft(cycle: cycle)
             return
         }
-        let rows = SessionService.prescribe(cycle: cycle, schedule: schedule, profile: profile.inputs)
-        guard !rows.isEmpty else { SessionService.clearDraft(cycle: cycle); return }
+        plan = cycle.loadDraftPlan()
+        let rows = sessionRows(cycle: cycle, schedule: schedule)
+        guard !rows.isEmpty else { plan = SessionPlan(); SessionService.clearDraft(cycle: cycle); return }
         seedDraft(rows)
         for set in saved {
             if let idx = draft.firstIndex(where: { $0.exerciseId == set.exerciseId && $0.setIndex == set.setIndex }) {
@@ -671,6 +778,7 @@ struct TodayView: View {
         metronome.isOn = false
         isWorkingOut = false
         draft = []
+        plan = SessionPlan()
         focusGroupId = nil
         SessionService.clearDraft(cycle: cycle)
         try? context.save()
@@ -682,6 +790,7 @@ struct TodayView: View {
         let logged = draft
         isWorkingOut = false
         draft = []
+        plan = SessionPlan()
         focusGroupId = nil
         SessionService.complete(
             context: context,
@@ -709,14 +818,18 @@ struct TodayView: View {
 
     private func tickRest() {
         restTick = Date()
-        guard restEndsAt != nil else { return }
+        guard let endsAt = restEndsAt else { return }
         if timerRemaining <= 0 {
             timer?.invalidate()
             timer = nil
             restEndsAt = nil
             showRest = false
-            RestNotifier.cancel()
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            // The pending notification is not cancelled here: it fires at this same moment and is the alarm.
+            if endsAt.timeIntervalSinceNow > -3 {
+                RestNotifier.ringInApp()
+            } else {
+                RestNotifier.clearDelivered()
+            }
         }
     }
 
@@ -735,37 +848,5 @@ struct TodayView: View {
         restEndsAt = nil
         showRest = false
         RestNotifier.cancel()
-    }
-}
-
-/// Local notification so the rest timer still "rings" when the phone is locked.
-enum RestNotifier {
-    private static let id = "gym.rest.done"
-    private static var asked = false
-
-    static func schedule(after seconds: Int) {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [id])
-        guard seconds > 0 else { return }
-        let request = { () -> Void in
-            let content = UNMutableNotificationContent()
-            content.title = "휴식 끝"
-            content.body = "다음 세트 갈 시간이에요."
-            content.sound = .default
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds), repeats: false)
-            center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
-        }
-        if asked {
-            request()
-        } else {
-            asked = true
-            center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
-                if granted { request() }
-            }
-        }
-    }
-
-    static func cancel() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
     }
 }
