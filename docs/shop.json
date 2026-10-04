@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-03",
+  "updatedAt": "2026-10-04",
   "categories": [
     {
       "id": "protein",
@@ -143,6 +143,46 @@
       "summary": "제로 탄산음료 355ml 24개",
       "imageURL": "https://ramloper.github.io/health/shop/images/sd500-viper-pump-zero.png",
       "coupangURL": "https://link.coupang.com/a/hv8snfsrm0"
+    },
+    {
+      "id": "sd500-eaa-yogurt",
+      "categoryId": "amino",
+      "name": "삼대오백 EAA 요구르트맛",
+      "summary": "필수아미노산 파우더 300g",
+      "imageURL": "https://ramloper.github.io/health/shop/images/sd500-eaa-yogurt.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4vQPopxs"
+    },
+    {
+      "id": "sd500-worldclass-grape-300g",
+      "categoryId": "booster",
+      "name": "삼대오백 프리워크아웃 월드클래스 포도 300g",
+      "summary": "운동 전 부스터 포도맛 300g",
+      "imageURL": "https://ramloper.github.io/health/shop/images/sd500-worldclass-grape-300g.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4A5pDOG4"
+    },
+    {
+      "id": "sd500-creatine-tablet",
+      "categoryId": "booster",
+      "name": "삼대오백 크레아틴 정제",
+      "summary": "크레아틴 모노 하이드레이트 120정",
+      "imageURL": "https://ramloper.github.io/health/shop/images/sd500-creatine-tablet.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4Fr1BW2u"
+    },
+    {
+      "id": "sd500-shaker-white-800",
+      "categoryId": "gear",
+      "name": "삼대오백 프리미엄 쉐이커 화이트 800ml",
+      "summary": "단백질 쉐이커 보틀 화이트 800ml",
+      "imageURL": "https://ramloper.github.io/health/shop/images/sd500-shaker-white-800.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4Jzy8Bbw"
+    },
+    {
+      "id": "sd500-shaker-black-600",
+      "categoryId": "gear",
+      "name": "삼대오백 프리미엄 쉐이커 블랙 600ml",
+      "summary": "단백질 쉐이커 보틀 블랙 600ml",
+      "imageURL": "https://ramloper.github.io/health/shop/images/sd500-shaker-black-600.jpg",
+      "coupangURL": "https://link.coupang.com/a/hx4NEiPwbY"
     },
     {
       "id": "run-flipbelt-zip",
