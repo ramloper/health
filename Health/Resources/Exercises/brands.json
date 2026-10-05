@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "brands": [
+    {"id": "hammer", "name": "해머스트렝스", "englishName": "Hammer Strength"},
+    {"id": "technogym", "name": "테크노짐", "englishName": "Technogym"},
+    {"id": "lifefitness", "name": "라이프피트니스", "englishName": "Life Fitness"},
+    {"id": "cybex", "name": "사이벡스", "englishName": "Cybex"},
+    {"id": "matrix", "name": "매트릭스", "englishName": "Matrix"},
+    {"id": "panatta", "name": "파나타", "englishName": "Panatta"},
+    {"id": "gym80", "name": "짐80", "englishName": "gym80"},
+    {"id": "prime", "name": "프라임", "englishName": "Prime"},
+    {"id": "nautilus", "name": "노틸러스", "englishName": "Nautilus"},
+    {"id": "hoist", "name": "호이스트", "englishName": "Hoist"},
+    {"id": "drax", "name": "디랙스", "englishName": "DRAX"},
+    {"id": "newtech", "name": "뉴텍웰니스", "englishName": "Newtech Wellness"}
+  ]
+}

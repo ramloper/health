@@ -6,7 +6,7 @@
 - [x] 아이폰 전용, 세로 모드, iOS 17 이상
 - [x] PrivacyInfo.xcprivacy (UserDefaults 사유 CA92.1)
 - [x] 암호화 미사용 선언 (ITSAppUsesNonExemptEncryption = NO)
-- [x] 유닛 테스트 76개, 스크린샷·5/3/1 세션 완료·쇼핑 탭 UI 테스트
+- [x] 유닛 테스트 133개+, 스크린샷·5/3/1 세션 완료·쇼핑 탭·라이브러리(피커 2단계·길게 누르기·내 변형) UI 테스트
 - [x] 스토어 문구: docs/app-store-metadata.md
 - [x] 개인정보 처리방침, 지원 페이지: docs/privacy-policy.md, docs/support.md
 
@@ -53,7 +53,7 @@ Notion 공개 페이지나 어떤 정적 호스팅이든 상관없습니다. 내
 
 App Store Connect → 앱 → iOS 앱 → 1.0 준비 중
 
-- 스크린샷: 6.9" 탭에 `build/screenshots/*.png` 8장 (순서는 metadata 문서 참고)
+- 스크린샷: 6.9" 탭에 `build/screenshots/*.png` 9장 (순서는 metadata 문서 참고)
 - 홍보 문구, 설명, 키워드, 지원 URL: docs/app-store-metadata.md 복사
 - 빌드: TestFlight에 올라온 빌드 선택
 - 앱 심사 정보: 연락처 이름/전화/이메일, 메모는 metadata 문서의 "심사 메모"
@@ -75,10 +75,41 @@ App Store Connect → 앱 → iOS 앱 → 1.0 준비 중
 
 - [ ] `curl -s -o /dev/null -w '%{http_code}' https://ramloper.github.io/health/shop.json` 결과가 200
 - [ ] docs/shop.json의 coupangURL이 전부 실제 파트너스 링크인지 확인
-- [ ] 실제 상품으로 `./scripts/screenshots.sh` 재실행해 08-shop 갱신
-- [ ] metadata의 "제3자 콘텐츠"·"로그인도 서버도 없이" 문구 결정
+- [x] 실제 상품으로 `./scripts/screenshots.sh` 재실행해 08-shop 갱신
+- [x] metadata의 "제3자 콘텐츠"·"로그인도 서버도 없이" 문구 수정 (제3자 콘텐츠 포함·권한 있음, "로그인 없이, 기록은 이 폰에만")
+
+## 5-2. 운동 라이브러리 (첫 공개 빌드에 포함)
+
+첫 공개 버전은 1.0.0 그대로, 빌드 4부터 운동 라이브러리가 들어가요. TestFlight 빌드 3의 기록은 초기화돼요.
+
+- [ ] 빌드 3 설치·기록 생성 → 그 위에 빌드 4 덮어 설치 → 초기화 안내가 **1회만** 뜨고, 재실행 시 다시 안 뜨는지
+- [ ] `python3 scripts/validate-library.py --require-summaries --require-variants` exit 0
+- [ ] `./scripts/screenshots.sh` → `build/screenshots/` 9장 (01-today ~ 09-picker)
+- [ ] 실기기: 운동 추가 → 부위·장비 칩 → 운동 탭 → 변형 시트(내 헬스장 섹션) → 추가
+- [ ] 실기기: 운동 행 길게 누르기 → 일반 변형이 바로 추가되고 피커가 닫히는지
+- [ ] 실기기: 프로필 → 우리 헬스장 브랜드 선택 → 앱 재시작 후 유지, 피커에서 해당 브랜드가 먼저 보이는지
+- [ ] 실기기: 기록 탭 PR이 기본 운동별로 묶이고 변형별 최고 기록이 보이는지
+
+## 5-3. 세션 중 기능 (빌드 5부터)
+
+시뮬레이터에서 확인한 것 (2026-10-05, 빌드 5):
+
+- [x] 앱을 켜 둔 채 휴식 타이머가 끝나면 알림 배너가 뜸 (UI 테스트 `testRestAlarmRingsWhileAppIsOnScreen`)
+- [x] 휴식 건너뛰기를 누르면 알림이 오지 않음 (같은 테스트)
+- [x] 운동 중 "순서 바꾸기"로 순서 변경, 운동을 누르면 그 운동으로 이동 (UI 테스트 `testReorderJumpAndAddTodayOnlyExercise`)
+- [x] 운동 중 "운동 추가"로 오늘만 운동 추가, 세트 수 조절·빼기, 기록 탭에 남음 (같은 테스트)
+- [x] 빌드 3 위에 덮어 설치: 초기화 안내가 한 번 뜨고 재실행 시 다시 안 뜸
+- [x] 운동 중 앱을 강제 종료 후 재실행해도 추가한 운동과 바꾼 순서가 유지됨
+
+실기기에서만 확인할 수 있는 것:
+
+- [ ] 알림음이 실제로 들리는지, 무음 모드에서 진동이 오는지
+- [ ] 화면을 잠근 상태, 다른 앱을 보는 상태에서도 전과 같이 알림이 오는지
+- [ ] 이어폰으로 음악을 듣는 중에도 알림음이 들리는지
 
 ## 6. 다음 버전
 
 - `project.yml`의 `MARKETING_VERSION` 올리기 (1.0.0 → 1.1.0)
 - `./scripts/release.sh` → Transporter → App Store Connect에서 "+ 버전" → "이 버전의 새로운 기능" 작성 → 제출
+- `scripts/exercise-data/released-ids.txt`는 추가만(`python3 scripts/validate-library.py release`). 출시된 운동·변형 id는 삭제·변경 금지
+- 저장소 스키마를 바꾸면 `SchemaV2` 뒤에 마이그레이션 단계를 추가. 공개 후에는 기록 초기화 금지

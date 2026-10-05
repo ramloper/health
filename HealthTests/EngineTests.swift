@@ -340,7 +340,9 @@ final class EditDayTests: XCTestCase {
             isWorking: true,
             isOptional: false,
             plane: "upper",
-            seedKg: 12
+            seedKg: 12,
+            exerciseId: "cable-fly",
+            variantId: "cable-fly"
         )
         guard let idx = schedule.days.firstIndex(where: { $0.id == "chest-a" }) else {
             return XCTFail("chest-a missing")
@@ -355,71 +357,78 @@ final class EditDayTests: XCTestCase {
 }
 
 final class GuideTests: XCTestCase {
-    func testChestSupportedRowAndFacePullHaveCues() {
-        let row = ExerciseGuide.lookup(name: "체스트서포트 로우")
+    func testChestSupportedRowAndFacePullHaveCues() throws {
+        let row = try XCTUnwrap(GuideDetail.detail(forExerciseId: "machine-chest-supported-row"))
         XCTAssertTrue(row.summary.contains("가슴"))
         XCTAssertFalse(row.steps.isEmpty)
-        let pull = ExerciseGuide.lookup(name: "페이스풀")
+        let pull = try XCTUnwrap(GuideDetail.detail(forExerciseId: "cable-face-pull"))
         XCTAssertTrue(pull.muscle.contains("후면") || pull.muscle.contains("삼각"))
-        let ohp = ExerciseGuide.lookup(name: "OHP")
+        let ohp = try XCTUnwrap(GuideDetail.detail(forExerciseId: "ohp"))
         XCTAssertEqual(ohp.title, "오버헤드 프레스 (OHP)")
     }
 
     func testCatalogTitlesAndDefaultPlane() {
-        XCTAssertTrue(ExerciseGuide.catalogTitles.contains("벤치프레스"))
-        XCTAssertEqual(ExerciseGuide.defaultPlane(for: "스쿼트"), "lower")
-        XCTAssertEqual(ExerciseGuide.defaultPlane(for: "벤치프레스"), "upper")
+        XCTAssertEqual(ExerciseLibrary.shared.exercise(id: "bench")?.name, "벤치프레스")
+        XCTAssertEqual(ExerciseLibrary.shared.exercise(id: "squat")?.plane, "lower")
+        XCTAssertEqual(PlaneGuess.guess("스쿼트"), "lower")
+        XCTAssertEqual(PlaneGuess.guess("벤치프레스"), "upper")
+        XCTAssertEqual(PlaneGuess.guess("스쿼트 머신"), "lower")
+        XCTAssertEqual(PlaneGuess.guess("복근 머신"), "upper")
     }
 
+    /// The 33 1.0 guide exercises keep their picker group, now read from the library by exercise id.
     func testPickerGroups() {
-        XCTAssertEqual(ExerciseGuide.group(for: "복근"), "코어")
-        XCTAssertEqual(ExerciseGuide.group(for: "체스트서포트 로우"), "등")
-        XCTAssertEqual(ExerciseGuide.group(for: "페이스풀"), "어깨")
-        XCTAssertEqual(ExerciseGuide.group(for: "리어델트 플라이"), "어깨")
-        XCTAssertEqual(ExerciseGuide.group(for: "클로즈그립 벤치"), "팔")
-        XCTAssertEqual(ExerciseGuide.group(for: "오버헤드 익스텐션"), "팔")
-        XCTAssertEqual(ExerciseGuide.group(for: "레그 익스텐션"), "하체")
-        XCTAssertEqual(ExerciseGuide.group(for: "OHP"), "어깨")
-        XCTAssertEqual(ExerciseGuide.group(for: "딥스"), "가슴")
-        XCTAssertEqual(ExerciseGuide.group(for: "슈러그"), "등")
-        XCTAssertEqual(ExerciseGuide.group(for: "데드리프트"), "하체")
-        let expected: [String: String] = [
-            "벤치프레스": "가슴",
-            "인클라인 프레스": "가슴",
-            "케이블/펙덱 플라이": "가슴",
-            "라이트 플랫 덤벨 프레스": "가슴",
-            "딥스": "가슴",
-            "랫풀다운": "등",
-            "체스트서포트 로우": "등",
-            "스트레이트암 풀다운": "등",
-            "슈러그": "등",
-            "바벨로우": "등",
-            "시티드 케이블 로우": "등",
-            "파워클린 (대체: 펜들레이 로우)": "등",
-            "사이드 레터럴": "어깨",
-            "오버헤드 프레스 (OHP)": "어깨",
-            "페이스풀": "어깨",
-            "리어델트 플라이": "어깨",
-            "트라이셉스 푸시다운": "팔",
-            "오버헤드 익스텐션": "팔",
-            "컬": "팔",
-            "해머컬": "팔",
-            "프리처 컬": "팔",
-            "클로즈그립 벤치": "팔",
-            "스쿼트": "하체",
-            "프론트 스쿼트": "하체",
-            "레그프레스": "하체",
-            "레그 익스텐션": "하체",
-            "레그컬": "하체",
-            "카프 레이즈": "하체",
-            "데드리프트": "하체",
-            "RDL (루마니안 데드)": "하체",
-            "힙 쓰러스트": "하체",
-            "런지": "하체",
-            "복근": "코어"
+        let lib = ExerciseLibrary.shared
+        XCTAssertEqual(lib.exercise(id: "crunch")?.group, .core)
+        XCTAssertEqual(lib.exercise(id: "machine-chest-supported-row")?.group, .back)
+        XCTAssertEqual(lib.exercise(id: "cable-face-pull")?.group, .shoulders)
+        XCTAssertEqual(lib.exercise(id: "db-rear-delt-fly")?.group, .shoulders)
+        XCTAssertEqual(lib.exercise(id: "close-grip-bench")?.group, .arms)
+        XCTAssertEqual(lib.exercise(id: "cable-overhead-extension")?.group, .arms)
+        XCTAssertEqual(lib.exercise(id: "machine-leg-extension")?.group, .legs)
+        XCTAssertEqual(lib.exercise(id: "ohp")?.group, .shoulders)
+        XCTAssertEqual(lib.exercise(id: "dips")?.group, .chest)
+        XCTAssertEqual(lib.exercise(id: "shrug")?.group, .back)
+        XCTAssertEqual(lib.exercise(id: "deadlift")?.group, .legs)
+        // 1.0 had no 전신 chip and filed power clean under 등; the library files it under 전신.
+        let expected: [String: MuscleGroup] = [
+            "bench": .chest,
+            "incline-bench": .chest,
+            "cable-fly": .chest,
+            "db-bench-press": .chest,
+            "dips": .chest,
+            "cable-lat-pulldown": .back,
+            "machine-chest-supported-row": .back,
+            "cable-straight-arm-pulldown": .back,
+            "shrug": .back,
+            "bent-over-row": .back,
+            "cable-seated-row": .back,
+            "power-clean": .fullbody,
+            "db-lateral-raise": .shoulders,
+            "ohp": .shoulders,
+            "cable-face-pull": .shoulders,
+            "db-rear-delt-fly": .shoulders,
+            "cable-pushdown": .arms,
+            "cable-overhead-extension": .arms,
+            "curl": .arms,
+            "db-hammer-curl": .arms,
+            "preacher-curl": .arms,
+            "close-grip-bench": .arms,
+            "squat": .legs,
+            "front-squat": .legs,
+            "machine-leg-press": .legs,
+            "machine-leg-extension": .legs,
+            "machine-lying-leg-curl": .legs,
+            "machine-standing-calf-raise": .legs,
+            "deadlift": .legs,
+            "romanian-deadlift": .legs,
+            "hip-thrust": .legs,
+            "db-lunge": .legs,
+            "crunch": .core
         ]
-        for title in ExerciseGuide.catalogTitles {
-            XCTAssertEqual(ExerciseGuide.group(for: title), expected[title], title)
+        XCTAssertEqual(Set(GuideDetail.exerciseIds), Set(expected.keys))
+        for id in GuideDetail.exerciseIds {
+            XCTAssertEqual(lib.exercise(id: id)?.group, expected[id], id)
         }
     }
 }
@@ -455,15 +464,16 @@ final class CustomRoutineTests: XCTestCase {
             name: "테스트",
             days: [
                 ProgramDay(id: "d1", name: "가슴", isRest: false, exercises: [
-                    ScheduleExercise.makeCustom(name: "벤치프레스", sets: 3, reps: 12, seedKg: 50)
+                    ScheduleExercise.makeCustom(exerciseId: "bench", name: "벤치프레스", sets: 3, reps: 12, seedKg: 50)
                 ]),
                 ProgramDay(id: "d2", name: "등", isRest: false, exercises: [
-                    ScheduleExercise.makeCustom(name: "랫풀다운", sets: 3, reps: 12, seedKg: 40)
+                    ScheduleExercise.makeCustom(exerciseId: "cable-lat-pulldown", name: "랫풀다운", sets: 3, reps: 12, seedKg: 40)
                 ])
             ]
         )
-        let benchId = schedule.days[0].exercises[0].id
-        XCTAssertEqual(ExerciseGuide.defaultPlane(for: "벤치프레스"), "upper")
+        let benchId = "bench" // custom slots progress by variant id
+        XCTAssertEqual(schedule.days[0].exercises[0].stateKey, benchId)
+        XCTAssertEqual(schedule.days[0].exercises[0].plane, "upper")
         let engine = EngineRegistry.engine(for: schedule.id)
         var state = ProgramCatalog.seededState(schedule: schedule, profile: .documentDefaults)
         XCTAssertEqual(state.nextDayId, "d1")
@@ -495,7 +505,7 @@ final class CustomRoutineTests: XCTestCase {
 
     func testScheduleJSONRoundTrip() throws {
         var schedule = ProgramSchedule.makeCustom(name: "라운드트립")
-        schedule.days[0].exercises = [ScheduleExercise.makeCustom(name: "컬", seedKg: 12)]
+        schedule.days[0].exercises = [ScheduleExercise.makeCustom(exerciseId: "curl", name: "컬", seedKg: 12)]
         let json = try XCTUnwrap(TrainingCycle.encodeSchedule(schedule))
         let decoded = try JSONDecoder().decode(ProgramSchedule.self, from: Data(json.utf8))
         XCTAssertEqual(decoded.name, "라운드트립")
@@ -506,18 +516,11 @@ final class CustomRoutineTests: XCTestCase {
 
     @MainActor
     func testPersistCustomAndApplyToActiveCycle() throws {
-        let schema = Schema([
-            AthleteProfile.self,
-            TrainingCycle.self,
-            WorkoutSession.self,
-            SetLog.self,
-            PersonalRecord.self,
-            CustomRoutine.self
-        ])
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let context = ModelContext(container)
         var schedule = ProgramSchedule.makeCustom(name: "저장 루틴")
-        schedule.days[0].exercises = [ScheduleExercise.makeCustom(name: "벤치프레스", seedKg: 40)]
+        schedule.days[0].exercises = [ScheduleExercise.makeCustom(exerciseId: "bench", name: "벤치프레스", seedKg: 40)]
         let routine = SessionService.persistCustom(context: context, existing: nil, schedule: schedule, cycle: nil)
         XCTAssertEqual(routine.name, "저장 루틴")
         XCTAssertEqual(routine.resolvedSchedule()?.days.first?.exercises.first?.name, "벤치프레스")
@@ -527,21 +530,18 @@ final class CustomRoutineTests: XCTestCase {
         XCTAssertTrue(EngineRegistry.isCustom(cycle.programId))
 
         schedule.days.append(.blank(named: "2일차"))
-        schedule.days[1].exercises = [ScheduleExercise.makeCustom(name: "스쿼트", seedKg: 80)]
+        schedule.days[1].exercises = [ScheduleExercise.makeCustom(exerciseId: "squat", name: "스쿼트", seedKg: 80)]
         schedule.name = "저장 루틴 수정"
         _ = SessionService.persistCustom(context: context, existing: routine, schedule: schedule, cycle: cycle)
         XCTAssertEqual(routine.name, "저장 루틴 수정")
         XCTAssertEqual(cycle.resolvedSchedule()?.days.count, 2)
-        XCTAssertEqual(cycle.state.workingKg[schedule.days[1].exercises[0].id], 80)
+        XCTAssertEqual(cycle.state.workingKg["squat"], 80)
     }
 }
 
 final class ReviewFixTests: XCTestCase {
     private func makeContext() throws -> ModelContext {
-        let schema = Schema([
-            AthleteProfile.self, TrainingCycle.self, WorkoutSession.self,
-            SetLog.self, PersonalRecord.self, CustomRoutine.self
-        ])
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         return ModelContext(container)
     }
@@ -592,14 +592,23 @@ final class ReviewFixTests: XCTestCase {
         XCTAssertEqual(state.weekIndex, 2)
     }
 
-    func testLiftKeyMergesAcrossPrograms() {
-        XCTAssertEqual(ExerciseGuide.liftKey(id: "bench", name: "벤치프레스"), "벤치프레스")
-        XCTAssertEqual(ExerciseGuide.liftKey(id: "ppl-bench", name: "벤치프레스"), "벤치프레스")
-        XCTAssertEqual(ExerciseGuide.liftKey(id: "ex-123", name: "벤치프레스"), "벤치프레스")
-        XCTAssertEqual(ExerciseGuide.liftKey(id: "bench", name: "BBB 벤치프레스"), "벤치프레스")
-        XCTAssertEqual(ExerciseGuide.liftKey(id: "cap-t2", name: "T2 벤치"), "클로즈그립 벤치")
-        XCTAssertEqual(ExerciseGuide.liftKey(id: "ex-999", name: "이상한 운동"), "이상한 운동")
-        XCTAssertFalse(ExerciseGuide.lookup(name: "라이트 플랫 덤벨 프레스").isGeneric)
+    func testLiftKeyIsVariantIdAcrossPrograms() throws {
+        func slot(_ programId: String, _ slotId: String) throws -> ScheduleExercise {
+            try XCTUnwrap(CatalogTests.schedule(programId).days.flatMap(\.exercises).first { $0.id == slotId }, slotId)
+        }
+        XCTAssertEqual(try slot(FiveThreeOneBBBEngine.id, "bench").liftKey, "bench")
+        XCTAssertEqual(try slot(ClassBEngine.pplId, "ppl-bench").liftKey, "bench")
+        XCTAssertEqual(ScheduleExercise.makeCustom(exerciseId: "bench").liftKey, "bench")
+        XCTAssertEqual(try slot(NSuns5DayEngine.id, "cap-t2").liftKey, "close-grip-bench")
+        XCTAssertEqual(try slot(Hypertrophy6DayEngine.id, "light-flat").liftKey, "db-bench-press")
+        XCTAssertNotNil(GuideDetail.detail(forExerciseId: "db-bench-press"))
+        // BBB rows carry the day's main variant.
+        let schedule = try CatalogTests.schedule(FiveThreeOneBBBEngine.id)
+        var state = ProgramCatalog.seededState(schedule: schedule, profile: .documentDefaults)
+        state.nextDayId = "bench"
+        let rows = FiveThreeOneBBBEngine().prescribe(schedule: schedule, profile: .documentDefaults, state: state)
+        XCTAssertTrue(rows.allSatisfy { $0.liftKey == "bench" })
+        XCTAssertTrue(rows.contains { $0.isBBB })
     }
 
     @MainActor
@@ -614,10 +623,12 @@ final class ReviewFixTests: XCTestCase {
         SessionService.complete(context: context, cycle: cycle, schedule: schedule, profile: .documentDefaults, rows: rows, logged: logged)
         let prs = try context.fetch(FetchDescriptor<PersonalRecord>())
         XCTAssertEqual(prs.count, 1)
-        XCTAssertEqual(prs.first?.liftId, "벤치프레스")
+        XCTAssertEqual(prs.first?.liftId, "bench")
         XCTAssertEqual(prs.first?.kg, 32.5) // BBB weight, not the heavier warmup
-        XCTAssertNil(SessionService.lastHint(context: context, exerciseId: "bench", exerciseName: "벤치프레스").map(\.kg).flatMap { $0 == 40 ? $0 : nil })
-        XCTAssertEqual(SessionService.personalRecordKg(context: context, exerciseId: "ppl-bench", exerciseName: "벤치프레스"), 32.5)
+        XCTAssertNil(SessionService.lastHint(context: context, liftKey: "bench").map(\.kg).flatMap { $0 == 40 ? $0 : nil })
+        // Any program's bench slot (e.g. PPL `ppl-bench`) reads the same record key.
+        let pplBench = try XCTUnwrap(CatalogTests.schedule(ClassBEngine.pplId).days.flatMap(\.exercises).first { $0.id == "ppl-bench" })
+        XCTAssertEqual(SessionService.personalRecordKg(context: context, liftKey: pplBench.liftKey), 32.5)
         XCTAssertTrue(cycle.draftJSON.isEmpty)
     }
 
@@ -641,7 +652,7 @@ final class ReviewFixTests: XCTestCase {
         let schedule = try CatalogTests.schedule(Hypertrophy6DayEngine.id)
         let bench = try XCTUnwrap(schedule.days[0].exercises.first)
         XCTAssertEqual(bench.repLabel, "5~8회")
-        XCTAssertEqual(ScheduleExercise.makeCustom(name: "컬", reps: 10).repLabel, "10회")
+        XCTAssertEqual(ScheduleExercise.makeCustom(exerciseId: "curl", reps: 10).repLabel, "10회")
     }
 }
 
@@ -649,8 +660,7 @@ final class WorkoutRegressionTests: XCTestCase {
     private let profile = ProfileInputs.documentDefaults
 
     private var schema: Schema {
-        Schema([AthleteProfile.self, TrainingCycle.self, WorkoutSession.self,
-                SetLog.self, PersonalRecord.self, CustomRoutine.self])
+        Schema(versionedSchema: SchemaV2.self)
     }
 
     private func makeContext() throws -> ModelContext {
@@ -667,7 +677,7 @@ final class WorkoutRegressionTests: XCTestCase {
 
     private func customSchedule() -> ProgramSchedule {
         var schedule = ProgramSchedule.makeCustom(name: "수정 테스트")
-        schedule.days[0].exercises = [.makeCustom(name: "벤치프레스", sets: 3, reps: 10, seedKg: 30)]
+        schedule.days[0].exercises = [.makeCustom(exerciseId: "bench", name: "벤치프레스", sets: 3, reps: 10, seedKg: 30)]
         return schedule
     }
 
@@ -725,9 +735,9 @@ final class WorkoutRegressionTests: XCTestCase {
                 }
                 let next = engine.advance(schedule: schedule, profile: profile, state: state,
                     session: CompletedSession(dayId: state.nextDayId, sets: logged)).applied(to: state)
-                XCTAssertEqual(next.workingKg[ex.id], 20, schedule.id)
+                XCTAssertEqual(next.workingKg[ex.stateKey], 20, schedule.id)
                 for other in schedule.days[0].exercises.dropFirst() {
-                    XCTAssertEqual(next.workingKg[other.id], state.workingKg[other.id], schedule.id)
+                    XCTAssertEqual(next.workingKg[other.stateKey], state.workingKg[other.stateKey], schedule.id)
                 }
             }
         }
@@ -823,7 +833,7 @@ final class WorkoutRegressionTests: XCTestCase {
         edited.days[0].exercises[0].targetReps = 15
         edited.days[0].exercises[0].name = "수정한 운동"
         edited.days.append(ProgramDay(id: "next", name: "다음 날", isRest: false,
-                                     exercises: [.makeCustom(name: "스쿼트", seedKg: 80)]))
+                                     exercises: [.makeCustom(exerciseId: "squat", name: "스쿼트", seedKg: 80)]))
         _ = SessionService.persistCustom(context: context, existing: routine, schedule: edited, cycle: cycle)
         XCTAssertEqual(routine.resolvedSchedule(), edited)
         XCTAssertEqual(cycle.resolvedSchedule(), original)
@@ -839,10 +849,10 @@ final class WorkoutRegressionTests: XCTestCase {
         XCTAssertEqual(session.dayId, original.days[0].id)
         XCTAssertEqual(session.sets.count, 3)
         XCTAssertTrue(session.sets.allSatisfy { $0.exerciseName == "벤치프레스" && $0.completed })
-        XCTAssertEqual(cycle.state.workingKg[original.days[0].exercises[0].id], 32.5)
+        XCTAssertEqual(cycle.state.workingKg[original.days[0].exercises[0].stateKey], 32.5)
         XCTAssertEqual(cycle.resolvedSchedule(), edited)
         XCTAssertEqual(cycle.nextDayId, "next")
-        XCTAssertEqual(cycle.state.workingKg[edited.days[1].exercises[0].id], 80)
+        XCTAssertEqual(cycle.state.workingKg[edited.days[1].exercises[0].stateKey], 80)
         XCTAssertFalse(cycle.hasDraft)
         XCTAssertNil(cycle.pendingSchedule)
     }
@@ -858,7 +868,7 @@ final class WorkoutRegressionTests: XCTestCase {
         edited.days[0].exercises[0].sets = 4
         SessionService.applyScheduleToCycle(cycle, edited)
         edited.days = [ProgramDay(id: "replacement", name: "새 요일", isRest: false,
-                                 exercises: [.makeCustom(name: "스쿼트", seedKg: 80)])]
+                                 exercises: [.makeCustom(exerciseId: "squat", name: "스쿼트", seedKg: 80)])]
         SessionService.applyScheduleToCycle(cycle, edited)
         XCTAssertEqual(cycle.resolvedSchedule(), original)
         SessionService.clearDraft(cycle: cycle)

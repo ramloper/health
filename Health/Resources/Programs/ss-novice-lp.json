@@ -3,14 +3,14 @@
   "name": "스타팅 스트렝스 LP",
   "days": [
     {"id": "a", "name": "A", "isRest": false, "exercises": [
-      {"id": "squat", "name": "스쿼트", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
-      {"id": "bench", "name": "벤치프레스", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 55, "isCompound": true},
-      {"id": "deadlift", "name": "데드리프트", "sets": 1, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 90, "isCompound": true}
+      {"id": "squat", "name": "스쿼트", "exerciseId": "squat", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
+      {"id": "bench", "name": "벤치프레스", "exerciseId": "bench", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 55, "isCompound": true},
+      {"id": "deadlift", "name": "데드리프트", "exerciseId": "deadlift", "sets": 1, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 90, "isCompound": true}
     ]},
     {"id": "b", "name": "B", "isRest": false, "exercises": [
-      {"id": "squat", "name": "스쿼트", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
-      {"id": "ohp", "name": "프레스", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 42.5, "isCompound": true},
-      {"id": "power-clean", "name": "파워클린", "sets": 5, "repMin": 3, "repMax": 3, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40, "substituteId": "pendlay-row"}
+      {"id": "squat", "name": "스쿼트", "exerciseId": "squat", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "lower", "seedKg": 80, "isCompound": true},
+      {"id": "ohp", "name": "프레스", "exerciseId": "ohp", "sets": 3, "repMin": 5, "repMax": 5, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 42.5, "isCompound": true},
+      {"id": "power-clean", "name": "파워클린", "exerciseId": "power-clean", "sets": 5, "repMin": 3, "repMax": 3, "isWorking": true, "isOptional": false, "plane": "upper", "seedKg": 40, "substituteId": "pendlay-row"}
     ]}
   ]
 }

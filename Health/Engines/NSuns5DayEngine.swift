@@ -17,21 +17,23 @@ struct NSuns5DayEngine: ProgressionEngine {
         let lift = dayLift[day.id] ?? day.id
         let tmKey = lift == "cap" ? "bench" : lift
         let tm = state.tm[tmKey] ?? state.tm[lift] ?? 100
-        let name = day.exercises.first?.name ?? day.name
+        let name = day.exercises.first?.displayName ?? day.name
+        let liftKey = day.exercises.first?.variantId ?? lift
         var rows: [PrescribedSet] = []
         for (i, pair) in t1.enumerated() {
             let amrap = i == t1.count - 1
             rows.append(PrescribedSet(
-                exerciseId: lift, exerciseName: name, setIndex: i,
+                exerciseId: lift, exerciseName: name, liftKey: liftKey, setIndex: i,
                 kg: Kg.percent(tm, pair.0), reps: pair.1, repMax: pair.1,
                 isWorking: true, isWarmup: i < 3, isAMRAP: amrap, isBBB: false, isOptional: false
             ))
         }
-        let t2Name = day.exercises.dropFirst().first?.name ?? "T2"
+        let t2Name = day.exercises.dropFirst().first?.displayName ?? "T2"
         let t2Id = day.exercises.dropFirst().first?.id ?? "\(lift)-t2"
+        let t2LiftKey = day.exercises.dropFirst().first?.variantId ?? liftKey
         for (i, pair) in t2.enumerated() {
             rows.append(PrescribedSet(
-                exerciseId: t2Id, exerciseName: t2Name, setIndex: t1.count + i,
+                exerciseId: t2Id, exerciseName: t2Name, liftKey: t2LiftKey, setIndex: t1.count + i,
                 kg: Kg.percent(tm, pair.0), reps: pair.1, repMax: pair.1,
                 isWorking: true, isWarmup: false, isAMRAP: i == t2.count - 1, isBBB: false, isOptional: false
             ))

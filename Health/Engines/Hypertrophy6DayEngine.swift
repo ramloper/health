@@ -10,11 +10,12 @@ struct Hypertrophy6DayEngine: ProgressionEngine {
         var rows: [PrescribedSet] = []
         for ex in day.exercises {
             let setCount = deload ? Int(ceil(Double(ex.sets) / 2.0)) : ex.sets
-            let kg = state.workingKg[ex.id] ?? ex.seedKg ?? 20
+            let kg = state.workingKg[ex.stateKey] ?? ex.seedKg ?? 20
             for i in 0..<setCount {
                 rows.append(PrescribedSet(
                     exerciseId: ex.id,
-                    exerciseName: ex.name,
+                    exerciseName: ex.displayName,
+                    liftKey: ex.liftKey,
                     setIndex: i,
                     kg: kg,
                     reps: ex.repMax,
@@ -37,16 +38,14 @@ struct Hypertrophy6DayEngine: ProgressionEngine {
         let inDeload = deloadLeft > 0
 
         if !inDeload {
-            let grouped = Dictionary(grouping: session.sets.filter { $0.isWorking && !$0.isWarmup }) { $0.exerciseId }
-            for (exerciseId, sets) in grouped {
-                let completed = sets.filter(\.completed)
-                guard let performedKg = completed.map(\.kg).min(),
-                      let ex = schedule.days.first(where: { $0.id == session.dayId })?.exercises.first(where: { $0.id == exerciseId }) else { continue }
-                let hitTop = completed.count == sets.count && completed.allSatisfy { $0.reps >= ex.repMax }
-                working[exerciseId] = performedKg
+            let day = schedule.days.first(where: { $0.id == session.dayId })
+            for group in ProgressionGroup.grouped(day: day, sets: session.sets.filter { $0.isWorking && !$0.isWarmup }) {
+                guard let performedKg = group.sets.filter(\.completed).map(\.kg).min() else { continue }
+                let hitTop = group.entries.allSatisfy { $0.set.completed && $0.set.reps >= $0.slot.repMax }
+                working[group.stateKey] = performedKg
                 if hitTop {
-                    let delta = ex.plane == "lower" ? 5.0 : 2.5
-                    working[exerciseId] = performedKg + delta
+                    let delta = group.lead.plane == "lower" ? 5.0 : 2.5
+                    working[group.stateKey] = performedKg + delta
                 }
             }
         }
