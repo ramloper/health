@@ -117,4 +117,40 @@ final class SessionUITests: XCTestCase {
         app.tabBars.firstMatch.buttons["기록"].tap()
         XCTAssertTrue(app.staticTexts["3세트 완료"].waitForExistence(timeout: 5))
     }
+
+    /// The rest alarm must ring while the app is on screen (iOS drops foreground notifications without a delegate),
+    /// and must not ring after "휴식 건너뛰기".
+    func testRestAlarmRingsWhileAppIsOnScreen() {
+        app.terminate()
+        app.launchArguments = ["--demo", "-gym.restSeconds", "10"]
+        app.launch()
+        let start = app.buttons["start-workout"]
+        XCTAssertTrue(start.waitForExistence(timeout: 20))
+        start.tap()
+
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let banner = springboard.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "휴식 끝")).firstMatch
+        let tick = app.buttons["세트 완료로 표시"].firstMatch
+        let done = app.buttons.matching(identifier: "세트 완료됨")
+        let skip = app.buttons["휴식 건너뛰기"]
+
+        // Natural end: leave the rest sheet alone until the timer runs out.
+        XCTAssertTrue(tick.waitForExistence(timeout: 5))
+        tapUntil(tick, app: app) { done.count >= 1 }
+        allowNotificationsIfAsked()
+        XCTAssertTrue(skip.waitForExistence(timeout: 5))
+        XCTAssertTrue(banner.waitForExistence(timeout: 25), "no rest alarm while the app is on screen")
+        XCTAssertEqual(app.state, .runningForeground)
+        snap("ui-rest-banner", app: app)
+        XCTAssertFalse(skip.exists, "the rest sheet closes when the timer ends")
+
+        // Skipped rest: no alarm afterwards.
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: banner)
+        waitForExpectations(timeout: 15)
+        tapUntil(tick, app: app) { done.count >= 2 }
+        XCTAssertTrue(skip.waitForExistence(timeout: 5))
+        skip.tap()
+        XCTAssertFalse(banner.waitForExistence(timeout: 14), "a skipped rest must not ring")
+    }
 }
